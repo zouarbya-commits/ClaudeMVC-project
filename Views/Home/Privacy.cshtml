@@ -1,0 +1,64 @@
+@{
+    ViewData["Title"] = "Confidentialité";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a asp-controller="Home" asp-action="Index">Accueil</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">Confidentialité</li>
+                </ol>
+            </nav>
+
+            <h1 class="fw-bold mb-4">
+                <i class="bi bi-shield-lock text-primary me-2"></i>Politique de confidentialité
+            </h1>
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold">
+                        <i class="bi bi-info-circle text-primary me-2"></i>Collecte des données
+                    </h5>
+                    <p class="card-text text-muted">
+                        Cette application est un projet de démonstration ASP.NET Core MVC.
+                        Aucune donnée personnelle n'est collectée ou stockée par défaut.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold">
+                        <i class="bi bi-cookie text-warning me-2"></i>Cookies
+                    </h5>
+                    <p class="card-text text-muted">
+                        Cette application peut utiliser des cookies de session pour assurer
+                        le bon fonctionnement des fonctionnalités. Ces cookies sont temporaires
+                        et supprimés à la fermeture du navigateur.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold">
+                        <i class="bi bi-person-lock text-success me-2"></i>Vos droits
+                    </h5>
+                    <p class="card-text text-muted">
+                        Conformément au RGPD, vous disposez d'un droit d'accès, de rectification
+                        et de suppression de vos données personnelles. Contactez l'administrateur
+                        pour exercer ces droits.
+                    </p>
+                </div>
+            </div>
+
+            <a asp-action="Index" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-2"></i>Retour à l'accueil
+            </a>
+        </div>
+    </div>
+</div>

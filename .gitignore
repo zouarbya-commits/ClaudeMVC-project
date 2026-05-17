@@ -1,0 +1,42 @@
+## .NET / ASP.NET Core
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+*.userprefs
+
+# NuGet packages
+packages/
+*.nupkg
+project.lock.json
+
+# Build outputs
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Publish output
+publish/
+
+# Runtime data
+*.pid
+*.seed
+
+# dotnet tool
+.dotnet/
+
+# Secrets
+appsettings.Production.json
+secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
