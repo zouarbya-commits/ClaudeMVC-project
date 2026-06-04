@@ -1,0 +1,164 @@
+@model ClaudeMVC.Models.Parcelle
+@{
+    ViewData["Title"] = "Business Plan – " + Model.Nom;
+    var scenarios = ViewBag.Scenarios as List<ClaudeMVC.Models.ScenarioEcoTourisme> ?? new();
+    var bestScen = scenarios.OrderByDescending(s => s.MargeNette).FirstOrDefault();
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Éco-tourisme</a>
+</div>
+
+<!-- En-tête Business Plan -->
+<div class="bg-white rounded-3 border p-4 mb-4" style="border-top: 4px solid #52b788 !important">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="text-muted small text-uppercase fw-semibold mb-1" style="letter-spacing:0.1em">Fiche de présentation</div>
+            <h4 class="fw-bold mb-1">Projet Éco-tourisme</h4>
+            <h5 class="text-success fw-semibold">@Model.Nom</h5>
+            <p class="text-muted mb-0"><i class="bi bi-geo-alt me-1"></i>@Model.Localisation · @Model.AltitudeMetre · @Model.SuperficieHa ha</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            @if (bestScen != null)
+            {
+                <div class="text-muted small">Meilleur scénario</div>
+                <div class="fs-4 fw-bold text-success">@bestScen.MargeNette.ToString("N0") MAD/an</div>
+                <div class="text-muted small">ROI : @bestScen.RetourInvestissement.ToString("F1") ans</div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Atouts -->
+    <div class="col-md-6">
+        <div class="bg-white rounded-3 border p-3 h-100">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-star me-2 text-warning"></i>Atouts du site</h6>
+            <ul class="list-unstyled mb-0">
+                <li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>Altitude @Model.AltitudeMetre – climat montagnard attractif</li>
+                <li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>@Model.SuperficieHa ha – espace suffisant pour circuits variés</li>
+                <li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>Proximité patrimoine culturel amazigh</li>
+                <li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>Biodiversité floristique et faunistique</li>
+                <li class="py-1"><i class="bi bi-check-circle text-success me-2"></i>Demande croissante éco-tourisme Maroc (+12%/an)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Modèles de revenus -->
+    <div class="col-md-6">
+        <div class="bg-white rounded-3 border p-3 h-100">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-currency-exchange me-2 text-success"></i>Sources de revenus</h6>
+            <ul class="list-unstyled mb-0">
+                <li class="py-1 border-bottom"><i class="bi bi-compass text-info me-2"></i><strong>Circuits guidés</strong> – 150–250 MAD/personne</li>
+                <li class="py-1 border-bottom"><i class="bi bi-moon-stars text-primary me-2"></i><strong>Bivouac / Gîte</strong> – 120–350 MAD/nuit</li>
+                <li class="py-1 border-bottom"><i class="bi bi-ticket-perforated text-warning me-2"></i><strong>Droits d'accès</strong> – 30–50 MAD/visiteur</li>
+                <li class="py-1 border-bottom"><i class="bi bi-person-check text-success me-2"></i><strong>Guides locaux</strong> – emploi 2–5 guides</li>
+                <li class="py-1"><i class="bi bi-basket text-danger me-2"></i><strong>Produits locaux</strong> – miel, plantes aromatiques</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Scénarios financiers -->
+<div class="bg-white rounded-3 border p-3 mb-4">
+    <h6 class="fw-semibold mb-3"><i class="bi bi-table me-2"></i>Projections financières – 3 scénarios</h6>
+    @if (!scenarios.Any())
+    {
+        <p class="text-muted text-center py-3">Aucun scénario défini pour cette parcelle</p>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var s in scenarios)
+            {
+                var isBest = s.Id == bestScen?.Id;
+                <div class="col-md-6">
+                    <div class="rounded-3 border p-3 @(isBest ? "border-success" : "")">
+                        @if (isBest)
+                        {
+                            <span class="badge bg-success mb-2"><i class="bi bi-trophy me-1"></i>Meilleur ROI</span>
+                        }
+                        <h6 class="fw-semibold">@s.Nom</h6>
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mb-2">@s.Modele</span>
+                        <div class="row g-1 text-center mb-2">
+                            <div class="col-6">
+                                <div class="rounded-2 p-1" style="background:#f9fafb">
+                                    <div class="fw-bold small">@s.VisiteursParAn.ToString("N0")</div>
+                                    <div style="font-size:0.65rem" class="text-muted">Visiteurs/an</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="rounded-2 p-1" style="background:#f9fafb">
+                                    <div class="fw-bold small">@s.InvestissementInitial.ToString("N0") MAD</div>
+                                    <div style="font-size:0.65rem" class="text-muted">Invest. initial</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Revenu brut</span>
+                            <span class="text-success fw-medium">@s.RevenuBrutTotal.ToString("N0") MAD</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="text-muted">Total charges</span>
+                            <span class="text-danger">@s.CoutsTotal.ToString("N0") MAD</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="fw-semibold">Marge nette</span>
+                            <span class="fw-bold text-@(s.MargeNette >= 0 ? "success" : "danger")">@s.MargeNette.ToString("N0") MAD</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-muted">Retour sur invest.</span>
+                            <span class="fw-medium">@s.RetourInvestissement.ToString("F1") ans</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Démarches réglementaires -->
+<div class="bg-white rounded-3 border p-3 mb-3">
+    <h6 class="fw-semibold mb-3"><i class="bi bi-file-earmark-check me-2 text-primary"></i>Démarches réglementaires au Maroc</h6>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="rounded-2 p-3 h-100" style="background:#eff6ff">
+                <div class="fw-semibold small mb-2"><i class="bi bi-building me-1 text-primary"></i>Classement Tourisme</div>
+                <ul class="list-unstyled small text-muted mb-0">
+                    <li class="mb-1">→ Ministère du Tourisme – dossier classement</li>
+                    <li class="mb-1">→ Classement gîte rural (1–5 étoiles)</li>
+                    <li class="mb-1">→ Inscription Registre Commerce</li>
+                    <li>→ Patente & TVA tourisme</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="rounded-2 p-3 h-100" style="background:#f0fdf4">
+                <div class="fw-semibold small mb-2"><i class="bi bi-tree me-1 text-success"></i>Autorisations environnementales</div>
+                <ul class="list-unstyled small text-muted mb-0">
+                    <li class="mb-1">→ Étude d'impact environnemental (EIE)</li>
+                    <li class="mb-1">→ Haut Commissariat aux Eaux & Forêts</li>
+                    <li class="mb-1">→ Autorisation construction légère</li>
+                    <li>→ Certification éco-tourisme SMTE</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="rounded-2 p-3 h-100" style="background:#fef3c7">
+                <div class="fw-semibold small mb-2"><i class="bi bi-people me-1 text-warning"></i>Partenariats & Financement</div>
+                <ul class="list-unstyled small text-muted mb-0">
+                    <li class="mb-1">→ ORMVAT / Agences régionales</li>
+                    <li class="mb-1">→ Fonds Hassan II développement rural</li>
+                    <li class="mb-1">→ Programme INDH – Activités génératrices de revenus</li>
+                    <li>→ Fonds FIDA (agriculture montagne)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center">
+    <a asp-action="Reglementation" class="btn btn-outline-primary">
+        <i class="bi bi-book me-1"></i>Guide réglementaire complet
+    </a>
+</div>

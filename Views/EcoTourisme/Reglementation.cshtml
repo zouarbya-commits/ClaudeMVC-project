@@ -1,0 +1,103 @@
+@{
+    ViewData["Title"] = "Réglementation Éco-tourisme – Maroc";
+}
+
+<div class="alert alert-primary border-0 mb-4" style="background:#eff6ff">
+    <i class="bi bi-info-circle me-2"></i>
+    Synthèse des démarches réglementaires pour un projet éco-touristique au Maroc (circuits randonnée, gîte, hébergement léger).
+</div>
+
+<div class="row g-3">
+    <!-- Phase 1 -->
+    <div class="col-lg-6">
+        <div class="bg-white rounded-3 border p-3 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-primary rounded-circle p-2" style="width:28px;height:28px;font-size:0.75rem">1</span>
+                <h6 class="fw-semibold mb-0">Statut juridique & fiscal</h6>
+            </div>
+            <table class="table table-sm">
+                <tr><td class="small fw-medium">Structure juridique</td><td class="small text-muted">Auto-entrepreneur ou SARL</td></tr>
+                <tr><td class="small fw-medium">Registre du Commerce</td><td class="small text-muted">Tribunal de Commerce local</td></tr>
+                <tr><td class="small fw-medium">Identifiant fiscal</td><td class="small text-muted">DGI – Déclaration d'existence</td></tr>
+                <tr><td class="small fw-medium">Patente</td><td class="small text-muted">Commune territoriale</td></tr>
+                <tr><td class="small fw-medium">TVA tourisme</td><td class="small text-muted">10% sur prestations hébergement</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="col-lg-6">
+        <div class="bg-white rounded-3 border p-3 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-success rounded-circle p-2" style="width:28px;height:28px;font-size:0.75rem">2</span>
+                <h6 class="fw-semibold mb-0">Classement touristique</h6>
+            </div>
+            <table class="table table-sm">
+                <tr><td class="small fw-medium">Gîte rural</td><td class="small text-muted">Classement 1–5 étoiles – Ministère Tourisme</td></tr>
+                <tr><td class="small fw-medium">Maison d'hôtes</td><td class="small text-muted">Circulaire n°14-DNT-2010</td></tr>
+                <tr><td class="small fw-medium">Camping</td><td class="small text-muted">Autorisation préfectorale + classement</td></tr>
+                <tr><td class="small fw-medium">Agence de voyage</td><td class="small text-muted">Si vente circuits – licence A/B/C</td></tr>
+                <tr><td class="small fw-medium">Guide de montagne</td><td class="small text-muted">Carte professionnelle – Ministère Tourisme</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="col-lg-6">
+        <div class="bg-white rounded-3 border p-3 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-warning rounded-circle p-2" style="width:28px;height:28px;font-size:0.75rem">3</span>
+                <h6 class="fw-semibold mb-0">Autorisations foncières & construction</h6>
+            </div>
+            <table class="table table-sm">
+                <tr><td class="small fw-medium">Permis de construire</td><td class="small text-muted">Commune + Agence Urbaine (si agglomération)</td></tr>
+                <tr><td class="small fw-medium">Structures légères</td><td class="small text-muted">Autorisation simplifiée pour tentes/yourtes</td></tr>
+                <tr><td class="small fw-medium">Zone Natura / SIBE</td><td class="small text-muted">Haut Commissariat Eaux & Forêts (HCEFLCD)</td></tr>
+                <tr><td class="small fw-medium">Droits de passage</td><td class="small text-muted">Convention avec Communes et propriétaires</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Phase 4 -->
+    <div class="col-lg-6">
+        <div class="bg-white rounded-3 border p-3 h-100">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-info rounded-circle p-2" style="width:28px;height:28px;font-size:0.75rem">4</span>
+                <h6 class="fw-semibold mb-0">Financements disponibles</h6>
+            </div>
+            <table class="table table-sm">
+                <tr><td class="small fw-medium">Fonds Hassan II</td><td class="small text-muted">Subvention investissement touristique rural</td></tr>
+                <tr><td class="small fw-medium">INDH</td><td class="small text-muted">Initiative Nationale Développement Humain</td></tr>
+                <tr><td class="small fw-medium">FIDA Maroc</td><td class="small text-muted">Agriculture & développement zones montagneuses</td></tr>
+                <tr><td class="small fw-medium">ORMVA régional</td><td class="small text-muted">Office Régional Mise en Valeur Agricole</td></tr>
+                <tr><td class="small fw-medium">CGEM / CRI</td><td class="small text-muted">Centre Régional Investissement – accompagnement</td></tr>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Feuille de route -->
+<div class="bg-white rounded-3 border p-3 mt-3">
+    <h6 class="fw-semibold mb-3"><i class="bi bi-diagram-3 me-2"></i>Feuille de route – 18 mois</h6>
+    <div class="d-flex overflow-auto pb-2 gap-2">
+        @{
+            var etapes = new[] {
+                ("M1–M2", "Étude de faisabilité", "primary", "Topographie, biodiversité, accès"),
+                ("M3–M4", "Statut juridique", "success", "Constitution société, registre commerce"),
+                ("M4–M6", "Autorisations", "warning", "Permis, HCEFLCD, commune"),
+                ("M6–M9", "Aménagement", "info", "Sentiers, balisage, bivouacs"),
+                ("M9–M12", "Classement", "primary", "Dossier ministère tourisme"),
+                ("M12–M15", "Ouverture soft", "success", "Saison test, feedback, ajustements"),
+                ("M15–M18", "Commercial", "warning", "Partenariats agences, marketing digital"),
+            };
+        }
+        @foreach (var (periode, titre, couleur, detail) in etapes)
+        {
+            <div class="flex-shrink-0 rounded-3 border p-3" style="min-width:160px">
+                <span class="badge bg-@couleur bg-opacity-10 text-@couleur border border-@couleur border-opacity-25 small mb-2">@periode</span>
+                <div class="fw-semibold small mb-1">@titre</div>
+                <div class="text-muted" style="font-size:0.7rem">@detail</div>
+            </div>
+        }
+    </div>
+</div>

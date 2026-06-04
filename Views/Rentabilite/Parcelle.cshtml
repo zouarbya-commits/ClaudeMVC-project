@@ -1,0 +1,148 @@
+@model ClaudeMVC.Models.Parcelle
+@{
+    ViewData["Title"] = "Rentabilité – " + Model.Nom;
+    var rendements = ViewBag.Rendements as List<ClaudeMVC.Models.RendementAnnuel> ?? new();
+    var annees = rendements.Select(r => r.Annee).Distinct().OrderBy(a => a).ToList();
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Rentabilité</a>
+</div>
+
+<div class="row g-3 mb-3">
+    @foreach (var c in Model.Cultures)
+    {
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="fw-semibold mb-2">@c.Icone @c.Espece</div>
+                <div class="row g-1 text-center">
+                    <div class="col-6">
+                        <div class="fw-bold text-success fs-6">@c.RevenuBrutEstime.ToString("N0")</div>
+                        <div class="text-muted" style="font-size:0.7rem">Revenu brut (MAD)</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold text-@(c.MargeNette >= 0 ? "success" : "danger") fs-6">@c.MargeNette.ToString("N0")</div>
+                        <div class="text-muted" style="font-size:0.7rem">Marge nette (MAD)</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold fs-6">@c.RendementKgHa.ToString("N0") kg</div>
+                        <div class="text-muted" style="font-size:0.7rem">Rendement/ha</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold fs-6">@c.PrixVenteKg MAD</div>
+                        <div class="text-muted" style="font-size:0.7rem">Prix vente/kg</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Comparaison par année et espèce -->
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="bg-white rounded-3 border p-3">
+            <h6 class="fw-semibold mb-3">Historique rendements</h6>
+            @if (!rendements.Any())
+            {
+                <p class="text-muted small text-center py-3">Aucun rendement enregistré</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light">
+                            <tr><th>Année</th><th>Espèce</th><th>Qté (kg)</th><th>Revenu brut</th><th>Marge</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in rendements.OrderByDescending(x => x.Annee))
+                            {
+                                <tr>
+                                    <td class="fw-medium">@r.Annee</td>
+                                    <td>@r.Espece</td>
+                                    <td>@r.QuantiteKg.ToString("N0")</td>
+                                    <td class="text-success fw-medium">@r.RevenuBrut.ToString("N0") MAD</td>
+                                    <td class="fw-semibold text-@(r.MargeNette >= 0 ? "success" : "danger")">@r.MargeNette.ToString("N0") MAD</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="bg-white rounded-3 border p-3">
+            <h6 class="fw-semibold mb-3">Répartition revenus bruts</h6>
+            <canvas id="pieChart" height="180"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Simulateur de prix -->
+<div class="bg-white rounded-3 border p-3 mt-3">
+    <h6 class="fw-semibold mb-3"><i class="bi bi-calculator me-2"></i>Simulateur de marge</h6>
+    <div class="row g-3">
+        @foreach (var c in Model.Cultures)
+        {
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">@c.Icone @c.Espece – Prix vente (MAD/kg)</label>
+                <input type="range" class="form-range sim-range"
+                       min="1" max="10" step="0.1"
+                       value="@c.PrixVenteKg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)"
+                       data-qty="@c.QuantiteKg" data-cout="@c.CoutProductionHa" data-ha="@c.SuperficieHa"
+                       data-espece="@c.Espece"
+                       oninput="updateSim(this)" />
+                <div class="d-flex justify-content-between small text-muted">
+                    <span>1 MAD</span>
+                    <span id="sim-val-@c.Id" class="fw-bold text-success">@c.PrixVenteKg MAD/kg</span>
+                    <span>10 MAD</span>
+                </div>
+                <div class="small mt-1">Marge simulée : <span id="sim-marge-@c.Id" class="fw-bold text-success">@c.MargeNette.ToString("N0") MAD</span></div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+    const cultures = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        Model.Cultures.Select(c => new {
+            id = c.Id, espece = c.Espece,
+            revenu = c.RevenuBrutEstime,
+            marge = c.MargeNette
+        })
+    ));
+    new Chart(document.getElementById('pieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: cultures.map(c => c.espece),
+            datasets: [{ data: cultures.map(c => c.revenu), backgroundColor: ['#52b788','#e9a84c','#94a3b8'], borderWidth: 2 }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+})();
+
+function updateSim(el) {
+    const prix = parseFloat(el.value);
+    const qty = parseFloat(el.dataset.qty);
+    const cout = parseFloat(el.dataset.cout);
+    const ha = parseFloat(el.dataset.ha);
+    const id = el.getAttribute('data-espece');
+    const marge = (qty * prix) - (cout * ha);
+    // find matching inputs by index
+    const ranges = document.querySelectorAll('.sim-range');
+    const idx = Array.from(ranges).indexOf(el);
+    const inputs = document.querySelectorAll('.sim-range');
+    // update display – use data-espece to find id
+    const valEl = document.querySelectorAll('[id^="sim-val-"]')[idx];
+    const margeEl = document.querySelectorAll('[id^="sim-marge-"]')[idx];
+    if (valEl) valEl.textContent = prix.toFixed(1) + ' MAD/kg';
+    if (margeEl) {
+        margeEl.textContent = marge.toLocaleString('fr-MA', {maximumFractionDigits:0}) + ' MAD';
+        margeEl.className = 'fw-bold ' + (marge >= 0 ? 'text-success' : 'text-danger');
+    }
+}
+</script>
+}

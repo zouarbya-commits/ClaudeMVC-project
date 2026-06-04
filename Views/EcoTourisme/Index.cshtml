@@ -1,0 +1,127 @@
+@model List<ClaudeMVC.Models.Parcelle>
+@{
+    ViewData["Title"] = "Éco-tourisme";
+    var scenarios = ViewBag.Scenarios as List<ClaudeMVC.Models.ScenarioEcoTourisme> ?? new();
+}
+
+<div class="alert alert-info border-0 mb-4" style="background:#e0f2fe">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Potentiel identifié</strong> — 2 terrains avec fort potentiel pour des circuits de randonnée, hébergement léger et éco-tourisme au Maroc.
+</div>
+
+<div class="row g-3 mb-4">
+    @foreach (var p in Model)
+    {
+        <div class="col-md-6">
+            <div class="parcelle-card h-100">
+                <div class="card-header-strip strip-eco"></div>
+                <div class="p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <h6 class="fw-bold mb-1">@p.Nom</h6>
+                            <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>@p.Localisation</div>
+                            <div class="text-muted small"><i class="bi bi-triangle me-1"></i>Altitude : @p.AltitudeMetre</div>
+                        </div>
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">@p.SuperficieHa ha</span>
+                    </div>
+                    <p class="text-muted small mb-3">@p.Description</p>
+                    <div class="row g-2 mb-3 text-center">
+                        <div class="col-4">
+                            <div class="rounded-2 p-2" style="background:#f0fdf4">
+                                <div class="fw-bold text-success">@(p.RevenusAnnuelsEstimes?.ToString("N0")) MAD</div>
+                                <div class="text-muted" style="font-size:0.7rem">Revenus estimés</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="rounded-2 p-2" style="background:#fff7ed">
+                                <div class="fw-bold text-warning">@(p.CoutsAnnuelsEstimes?.ToString("N0")) MAD</div>
+                                <div class="text-muted" style="font-size:0.7rem">Charges estimées</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="rounded-2 p-2" style="background:#f0fdf4">
+                                <div class="fw-bold text-success">@p.MargeNette.ToString("N0") MAD</div>
+                                <div class="text-muted" style="font-size:0.7rem">Marge nette</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="EcoTourisme" asp-action="BusinessPlan" asp-route-parcelleId="@p.Id"
+                           class="btn btn-sm btn-info text-white flex-grow-1">
+                            <i class="bi bi-file-earmark-text me-1"></i>Business Plan
+                        </a>
+                        <a asp-controller="Parcelles" asp-action="Details" asp-route-id="@p.Id"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Comparaison des scénarios -->
+<div class="bg-white rounded-3 border p-3 mb-3">
+    <h6 class="fw-semibold mb-3">Comparaison des scénarios de revenus</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Scénario</th>
+                    <th>Modèle</th>
+                    <th>Visiteurs/an</th>
+                    <th>Revenu brut</th>
+                    <th>Charges</th>
+                    <th>Marge nette</th>
+                    <th>Retour invest.</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var s in scenarios)
+                {
+                    var p = Model.FirstOrDefault(x => x.Id == s.ParcelleId);
+                    <tr>
+                        <td class="fw-medium">@s.Nom</td>
+                        <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">@s.Modele</span></td>
+                        <td>@s.VisiteursParAn.ToString("N0")</td>
+                        <td class="text-success fw-medium">@s.RevenuBrutTotal.ToString("N0") MAD</td>
+                        <td class="text-danger">@s.CoutsTotal.ToString("N0") MAD</td>
+                        <td class="fw-semibold text-@(s.MargeNette >= 0 ? "success" : "danger")">@s.MargeNette.ToString("N0") MAD</td>
+                        <td>@s.RetourInvestissement.ToString("F1") ans</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="bg-white rounded-3 border p-3">
+    <h6 class="fw-semibold mb-3">Comparaison marge nette par scénario</h6>
+    <canvas id="scenChart" height="100"></canvas>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+    const sc = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        scenarios.Select(s => new { nom = s.Nom, marge = s.MargeNette, revenu = s.RevenuBrutTotal })
+    ));
+    new Chart(document.getElementById('scenChart'), {
+        type: 'bar',
+        data: {
+            labels: sc.map(s => s.nom),
+            datasets: [
+                { label: 'Revenu brut', data: sc.map(s => s.revenu), backgroundColor: '#52b78888', borderColor: '#52b788', borderWidth: 1, borderRadius: 4 },
+                { label: 'Marge nette', data: sc.map(s => s.marge), backgroundColor: '#e9a84c88', borderColor: '#e9a84c', borderWidth: 1, borderRadius: 4 },
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { ticks: { callback: v => v.toLocaleString('fr-MA') + ' MAD' } } }
+        }
+    });
+})();
+</script>
+}
