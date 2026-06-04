@@ -1,8 +1,7 @@
 @model ClaudeMVC.Models.Parcelle
 @{
     ViewData["Title"] = Model.Nom;
-    var stripClass = Model.Type == ClaudeMVC.Models.TypeParcelle.EcoTourisme ? "strip-eco" :
-                     Model.Type == ClaudeMVC.Models.TypeParcelle.Arboricole ? "strip-arbo" : "strip-vide";
+    var stripClass = Model.StripClass;
 }
 
 <div class="mb-3">
@@ -19,7 +18,7 @@
             <div class="p-4">
                 <div class="d-flex justify-content-between mb-3">
                     <div>
-                        <span class="badge bg-@Model.CouleurBadge bg-opacity-10 text-@Model.CouleurBadge border border-@Model.CouleurBadge border-opacity-25 mb-2">@Model.Type</span>
+                        <span class="badge bg-@Model.CouleurBadgeBootstrap bg-opacity-10 text-@Model.CouleurBadgeBootstrap border border-@Model.CouleurBadgeBootstrap border-opacity-25 mb-2">@Model.Type</span>
                         <h5 class="fw-bold mb-1">@Model.Nom</h5>
                         <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>@Model.Localisation</div>
                     </div>
@@ -28,7 +27,7 @@
                 <hr>
                 <div class="row g-2 text-center">
                     <div class="col-6">
-                        <div class="fw-bold fs-5">@Model.SuperficieHa ha</div>
+                        <div class="fw-bold fs-5">@Model.SuperficieAffichee</div>
                         <div class="text-muted" style="font-size:0.7rem">Superficie</div>
                     </div>
                     @if (Model.AltitudeMetre != null)

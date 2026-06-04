@@ -104,6 +104,7 @@
         .strip-eco { background: linear-gradient(90deg, #52b788, #2d9e6b); }
         .strip-arbo { background: linear-gradient(90deg, #e9a84c, #d4820f); }
         .strip-vide { background: linear-gradient(90deg, #94a3b8, #64748b); }
+        .strip-mixte { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
         .intervention-row:hover { background: #f9fafb; }
         .calendar-chip {
             display: inline-block;
@@ -137,8 +138,12 @@
         </a>
         <div class="nav-section">Parcelles</div>
         <a asp-controller="Parcelles" asp-action="Index"
-           class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Parcelles" ? "active" : "")">
+           class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Parcelles" && ViewContext.RouteData.Values["action"]?.ToString() != "Create" ? "active" : "")">
             <i class="bi bi-map"></i> Mes Parcelles
+        </a>
+        <a asp-controller="Parcelles" asp-action="Create"
+           class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Create" && ViewContext.RouteData.Values["controller"]?.ToString() == "Parcelles" ? "active" : "")">
+            <i class="bi bi-plus-circle"></i> Nouvelle parcelle
         </a>
         <div class="nav-section">Opérations</div>
         <a asp-controller="Interventions" asp-action="Index"

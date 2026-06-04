@@ -11,7 +11,7 @@
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <div class="text-muted small mb-1">Superficie totale</div>
-                    <div class="fs-4 fw-bold">@Model.TotalSuperficieHa.ToString("F1") ha</div>
+                    <div class="fs-4 fw-bold">@(Model.TotalSuperficieHa >= 1 ? Model.TotalSuperficieHa.ToString("F2") + " ha" : (Model.TotalSuperficieHa * 10000).ToString("N0") + " m²")</div>
                     <div class="text-muted small">@Model.Parcelles.Count parcelles</div>
                 </div>
                 <div class="stat-icon" style="background:#d1fae5;font-size:1.4rem">🗺️</div>
@@ -91,7 +91,7 @@
                                         </span>
                                     </div>
                                     <div class="d-flex gap-3 text-muted small">
-                                        <span><i class="bi bi-aspect-ratio me-1"></i>@p.SuperficieHa ha</span>
+                                        <span><i class="bi bi-aspect-ratio me-1"></i>@p.SuperficieAffichee</span>
                                         @if (p.RevenusAnnuelsEstimes > 0)
                                         {
                                             <span class="text-success"><i class="bi bi-currency-exchange me-1"></i>@p.RevenusAnnuelsEstimes?.ToString("N0") MAD</span>
