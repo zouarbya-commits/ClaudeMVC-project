@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Terroir Manager – Preview</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--green-dark:#1a3c2b;--green-mid:#2d6a4f;--green-light:#52b788;--amber:#e9a84c;}
+body{background:#f4f6f4;font-family:'Segoe UI',sans-serif;}
+/* NAV */
+.nav-pills .nav-link{color:#555;border-radius:8px;font-size:.85rem;}
+.nav-pills .nav-link.active{background:var(--green-mid);color:#fff;}
+/* SIDEBAR MOCK */
+.sidebar-mock{background:var(--green-dark);border-radius:12px;padding:1rem;color:rgba(255,255,255,.7);font-size:.8rem;}
+.sidebar-mock .brand{color:#fff;font-weight:700;font-size:1rem;margin-bottom:.25rem;}
+.sidebar-mock .s-section{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin:.75rem 0 .25rem;}
+.sidebar-mock .s-link{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;border-radius:6px;cursor:pointer;transition:.15s;}
+.sidebar-mock .s-link:hover,.sidebar-mock .s-link.active{background:rgba(255,255,255,.12);color:#fff;}
+/* CARDS */
+.stat-card{background:#fff;border-radius:12px;padding:1rem;border:1px solid #e5e7eb;}
+.parcelle-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;transition:.2s;}
+.parcelle-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.1);}
+.strip{height:4px;}
+.strip-eco{background:linear-gradient(90deg,#52b788,#2d9e6b);}
+.strip-arbo{background:linear-gradient(90deg,#e9a84c,#d4820f);}
+.strip-vide{background:linear-gradient(90deg,#94a3b8,#64748b);}
+/* SCREEN WRAPPER */
+.screen{display:none;animation:fadeIn .25s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* TOPBAR */
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:.65rem 1.25rem;display:flex;align-items:center;justify-content:space-between;border-radius:0 12px 0 0;}
+.chip{display:inline-block;font-size:.72rem;padding:.2rem .55rem;border-radius:20px;font-weight:500;}
+</style>
+</head>
+<body>
+
+<div class="container-fluid py-3">
+  <!-- NAV TABS -->
+  <div class="d-flex flex-wrap gap-2 mb-3 justify-content-center">
+    <ul class="nav nav-pills flex-wrap gap-1" id="screenTabs">
+      <li class="nav-item"><button class="nav-link active" onclick="show('dashboard',this)"><i class="bi bi-grid-3x3-gap me-1"></i>Dashboard</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('parcelles',this)"><i class="bi bi-map me-1"></i>Parcelles</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('detail',this)"><i class="bi bi-eye me-1"></i>Fiche parcelle</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('interventions',this)"><i class="bi bi-calendar-check me-1"></i>Interventions</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('calendrier',this)"><i class="bi bi-calendar3 me-1"></i>Calendrier</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('rentabilite',this)"><i class="bi bi-bar-chart-line me-1"></i>Rentabilité</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('ecotourisme',this)"><i class="bi bi-compass me-1"></i>Éco-tourisme</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('businessplan',this)"><i class="bi bi-file-earmark-text me-1"></i>Business Plan</button></li>
+      <li class="nav-item"><button class="nav-link" onclick="show('evaluation',this)"><i class="bi bi-clipboard-data me-1"></i>Évaluation</button></li>
+    </ul>
+  </div>
+
+  <div class="row g-0">
+    <!-- SIDEBAR -->
+    <div class="col-auto d-none d-lg-block" style="width:200px">
+      <div class="sidebar-mock">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <i class="bi bi-geo-alt-fill text-success"></i>
+          <span class="brand">Terroir Manager</span>
+        </div>
+        <div style="font-size:.6rem;color:var(--green-light)">Gestion Foncière &amp; Agricole</div>
+        <div class="s-section">Vue d'ensemble</div>
+        <div class="s-link active" onclick="show('dashboard',null)"><i class="bi bi-grid-3x3-gap"></i>Tableau de bord</div>
+        <div class="s-section">Parcelles</div>
+        <div class="s-link" onclick="show('parcelles',null)"><i class="bi bi-map"></i>Mes Parcelles</div>
+        <div class="s-section">Opérations</div>
+        <div class="s-link" onclick="show('interventions',null)"><i class="bi bi-calendar-check"></i>Interventions</div>
+        <div class="s-link" onclick="show('calendrier',null)"><i class="bi bi-calendar3"></i>Calendrier annuel</div>
+        <div class="s-section">Analyse</div>
+        <div class="s-link" onclick="show('rentabilite',null)"><i class="bi bi-bar-chart-line"></i>Rentabilité</div>
+        <div class="s-link" onclick="show('ecotourisme',null)"><i class="bi bi-compass"></i>Éco-tourisme</div>
+        <div class="s-link"><i class="bi bi-file-earmark-text"></i>Réglementation</div>
+        <div class="s-link" onclick="show('evaluation',null)"><i class="bi bi-clipboard-data"></i>Évaluation terrain</div>
+        <div class="mt-3 pt-2 border-top border-secondary" style="font-size:.65rem;color:rgba(255,255,255,.3)">Maroc · 2026</div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="col">
+      <div class="ms-lg-3">
+
+        <!-- ═══ DASHBOARD ═══════════════════════════════════════════════ -->
+        <div id="s-dashboard" class="screen active">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Tableau de bord</h6><span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>mercredi 4 juin 2026</span></div>
+          <div class="row g-2 mb-3">
+            <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="d-flex justify-content-between"><div><div class="text-muted small mb-1">Superficie totale</div><div class="fs-5 fw-bold">28.7 ha</div><div class="text-muted small">4 parcelles</div></div><div style="font-size:1.5rem">🗺️</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="d-flex justify-content-between"><div><div class="text-muted small mb-1">Revenus estimés</div><div class="fs-5 fw-bold text-success">301 000 MAD</div><div class="text-muted small">annuel</div></div><div style="font-size:1.5rem">💰</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="d-flex justify-content-between"><div><div class="text-muted small mb-1">Marge nette</div><div class="fs-5 fw-bold text-success">165 500 MAD</div><div class="text-muted small">après charges</div></div><div style="font-size:1.5rem">📊</div></div></div></div>
+            <div class="col-sm-6 col-xl-3"><div class="stat-card"><div class="d-flex justify-content-between"><div><div class="text-muted small mb-1">Interventions</div><div class="fs-5 fw-bold">3 <span class="fs-6 text-muted">ce mois</span></div><div class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>4 en retard</div></div><div style="font-size:1.5rem">📅</div></div></div></div>
+          </div>
+          <div class="row g-3">
+            <div class="col-lg-8">
+              <div class="bg-white rounded-3 border p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0 fw-semibold">Mes Parcelles</h6><button class="btn btn-sm btn-outline-success">Voir tout</button></div>
+                <div class="row g-2">
+                  <div class="col-6"><div class="parcelle-card"><div class="strip strip-eco"></div><div class="p-2"><div class="fw-semibold small">Sentier Aït Benhaddou</div><div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> Ouarzazate</div><div class="d-flex gap-2 mt-1"><span class="text-muted" style="font-size:.7rem">8.5 ha</span><span class="text-success" style="font-size:.7rem">85 000 MAD</span></div></div></div></div>
+                  <div class="col-6"><div class="parcelle-card"><div class="strip strip-eco"></div><div class="p-2"><div class="fw-semibold small">Sentier Ait Bouguemez</div><div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> Azilal, Haut Atlas</div><div class="d-flex gap-2 mt-1"><span class="text-muted" style="font-size:.7rem">12 ha</span><span class="text-success" style="font-size:.7rem">120 000 MAD</span></div></div></div></div>
+                  <div class="col-6"><div class="parcelle-card"><div class="strip strip-arbo"></div><div class="p-2"><div class="fw-semibold small">Domaine Arboricole Immouzer</div><div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> Boulemane</div><div class="d-flex gap-2 mt-1"><span class="text-muted" style="font-size:.7rem">5.2 ha</span><span class="text-success" style="font-size:.7rem">96 000 MAD</span></div></div></div></div>
+                  <div class="col-6"><div class="parcelle-card"><div class="strip strip-vide"></div><div class="p-2"><div class="fw-semibold small">Terrain Vide Oulmès</div><div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> Khénifra</div><div class="d-flex gap-2 mt-1"><span class="text-muted" style="font-size:.7rem">3 ha</span><span class="text-warning" style="font-size:.7rem">En évaluation</span></div></div></div></div>
+                </div>
+              </div>
+              <div class="bg-white rounded-3 border p-3"><h6 class="mb-2 fw-semibold small">Rendements historiques – Marge nette (MAD)</h6><canvas id="dashChart" height="110"></canvas></div>
+            </div>
+            <div class="col-lg-4">
+              <div class="bg-white rounded-3 border p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2"><h6 class="mb-0 fw-semibold small">Prochaines interventions</h6><button class="btn btn-sm btn-success"><i class="bi bi-plus"></i></button></div>
+                <div class="py-2 border-bottom"><div class="d-flex gap-2"><div class="rounded-2 p-1" style="background:#f3f4f6"><i class="bi bi-basket text-warning"></i></div><div><div class="small fw-medium">Récolte pommes Gala</div><div class="text-muted" style="font-size:.7rem">Domaine Arboricole</div><span class="chip" style="background:#fef3c7;color:#92400e">25 Aoû · J+82</span></div></div></div>
+                <div class="py-2 border-bottom"><div class="d-flex gap-2"><div class="rounded-2 p-1" style="background:#f3f4f6"><i class="bi bi-basket text-warning"></i></div><div><div class="small fw-medium">Récolte pommes Golden</div><div class="text-muted" style="font-size:.7rem">Domaine Arboricole</div><span class="chip" style="background:#fef3c7;color:#92400e">20 Sep · J+108</span></div></div></div>
+                <div class="py-2 border-bottom"><div class="d-flex gap-2"><div class="rounded-2 p-1" style="background:#f3f4f6"><i class="bi bi-basket text-warning"></i></div><div><div class="small fw-medium">Récolte olives</div><div class="text-muted" style="font-size:.7rem">Domaine Arboricole</div><span class="chip" style="background:#d1fae5;color:#065f46">10 Nov · J+159</span></div></div></div>
+                <div class="py-2"><div class="d-flex gap-2"><div class="rounded-2 p-1" style="background:#f3f4f6"><i class="bi bi-tools text-dark"></i></div><div><div class="small fw-medium">Entretien sentiers</div><div class="text-muted" style="font-size:.7rem">Sentier Aït Benhaddou</div><span class="chip" style="background:#d1fae5;color:#065f46">15 Oct · J+133</span></div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ PARCELLES ════════════════════════════════════════════════ -->
+        <div id="s-parcelles" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Mes Parcelles</h6><span class="text-muted small">4 parcelles · 28.7 ha au total</span></div>
+          <div class="row g-3">
+            <div class="col-md-6 col-xl-4">
+              <div class="parcelle-card"><div class="strip strip-eco" style="height:5px"></div><div class="p-3">
+                <div class="d-flex justify-content-between mb-2"><div><div class="fw-bold">Sentier Aït Benhaddou</div><div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>Province de Ouarzazate</div><div class="text-muted small"><i class="bi bi-triangle me-1"></i>1 200 m</div></div><div><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 d-block mb-1">EcoTourisme</span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">EnDéveloppement</span></div></div>
+                <p class="text-muted small mb-2">Terrain en zone présaharienne avec vue panoramique sur la Vallée du Drâa.</p>
+                <div class="row g-1 mb-2 text-center"><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small">8.5 ha</div><div style="font-size:.65rem" class="text-muted">Superficie</div></div></div><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small text-success">47 000 MAD</div><div style="font-size:.65rem" class="text-muted">Marge nette</div></div></div></div>
+                <div class="d-flex gap-1"><button class="btn btn-sm btn-outline-success flex-grow-1"><i class="bi bi-eye me-1"></i>Détails</button><button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button><button class="btn btn-sm btn-outline-info"><i class="bi bi-compass"></i></button></div>
+              </div></div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+              <div class="parcelle-card"><div class="strip strip-eco" style="height:5px"></div><div class="p-3">
+                <div class="d-flex justify-content-between mb-2"><div><div class="fw-bold">Sentier Ait Bouguemez</div><div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>Province d'Azilal</div><div class="text-muted small"><i class="bi bi-triangle me-1"></i>1 900 m</div></div><div><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 d-block mb-1">EcoTourisme</span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">EnEvaluation</span></div></div>
+                <p class="text-muted small mb-2">Haute montagne dans la « Vallée Heureuse ». Accès sentiers GR villages berbères.</p>
+                <div class="row g-1 mb-2 text-center"><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small">12 ha</div><div style="font-size:.65rem" class="text-muted">Superficie</div></div></div><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small text-success">68 000 MAD</div><div style="font-size:.65rem" class="text-muted">Marge nette</div></div></div></div>
+                <div class="d-flex gap-1"><button class="btn btn-sm btn-outline-success flex-grow-1"><i class="bi bi-eye me-1"></i>Détails</button><button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button><button class="btn btn-sm btn-outline-info"><i class="bi bi-compass"></i></button></div>
+              </div></div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+              <div class="parcelle-card"><div class="strip strip-arbo" style="height:5px"></div><div class="p-3">
+                <div class="d-flex justify-content-between mb-2"><div><div class="fw-bold">Domaine Arboricole Immouzer</div><div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>Boulemane</div><div class="text-muted small"><i class="bi bi-triangle me-1"></i>1 500 m</div></div><div><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-block mb-1">Arboricole</span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">EnProduction</span></div></div>
+                <div class="mb-2"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 me-1">🍎 Pommier Golden (1.8 ha)</span><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 me-1">🍎 Pommier Gala (1.2 ha)</span><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">🫒 Olivier (2.2 ha)</span></div>
+                <div class="row g-1 mb-2 text-center"><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small">5.2 ha</div><div style="font-size:.65rem" class="text-muted">Superficie</div></div></div><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small text-success">54 500 MAD</div><div style="font-size:.65rem" class="text-muted">Marge nette</div></div></div></div>
+                <div class="d-flex gap-1"><button class="btn btn-sm btn-outline-success flex-grow-1"><i class="bi bi-eye me-1"></i>Détails</button><button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button><button class="btn btn-sm btn-outline-warning"><i class="bi bi-bar-chart-line"></i></button></div>
+              </div></div>
+            </div>
+            <div class="col-md-6 col-xl-4">
+              <div class="parcelle-card"><div class="strip strip-vide" style="height:5px"></div><div class="p-3">
+                <div class="d-flex justify-content-between mb-2"><div><div class="fw-bold">Terrain Vide Oulmès</div><div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>Khénifra</div><div class="text-muted small"><i class="bi bi-triangle me-1"></i>1 100 m</div></div><div><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 d-block mb-1">TerrainVide</span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Disponible</span></div></div>
+                <p class="text-muted small mb-2">Terrain non exploité. Plusieurs scénarios en cours d'évaluation.</p>
+                <div class="row g-1 mb-2 text-center"><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small">3 ha</div><div style="font-size:.65rem" class="text-muted">Superficie</div></div></div><div class="col-6"><div class="rounded-2 p-1" style="background:#f9fafb"><div class="fw-bold small text-danger">-3 500 MAD</div><div style="font-size:.65rem" class="text-muted">Coût d'opportunité</div></div></div></div>
+                <div class="d-flex gap-1"><button class="btn btn-sm btn-outline-success flex-grow-1"><i class="bi bi-eye me-1"></i>Détails</button><button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button><button class="btn btn-sm btn-outline-warning"><i class="bi bi-clipboard-data"></i></button></div>
+              </div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ FICHE PARCELLE ═══════════════════════════════════════════ -->
+        <div id="s-detail" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Domaine Arboricole Immouzer</h6><span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>4 juin 2026</span></div>
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="parcelle-card mb-3"><div class="strip strip-arbo" style="height:6px"></div><div class="p-3">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mb-2">Arboricole</span>
+                <h5 class="fw-bold mb-1">Domaine Arboricole Immouzer</h5>
+                <div class="text-muted small mb-1"><i class="bi bi-geo-alt me-1"></i>Immouzer Marmoucha, Boulemane</div>
+                <p class="text-muted small">Verger mixte pommes Golden/Gala (3 ha) et oliviers Picholine (2,2 ha). Irrigation gravitaire.</p>
+                <hr>
+                <div class="row g-2 text-center">
+                  <div class="col-6"><div class="fw-bold">5.2 ha</div><div class="text-muted" style="font-size:.7rem">Superficie</div></div>
+                  <div class="col-6"><div class="fw-bold">1 500 m</div><div class="text-muted" style="font-size:.7rem">Altitude</div></div>
+                  <div class="col-6"><div class="fw-bold text-success">96 000</div><div class="text-muted" style="font-size:.7rem">Revenus estimés (MAD)</div></div>
+                  <div class="col-6"><div class="fw-bold text-success">54 500</div><div class="text-muted" style="font-size:.7rem">Marge nette (MAD)</div></div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                  <button class="btn btn-outline-warning btn-sm"><i class="bi bi-bar-chart-line me-1"></i>Analyse rentabilité</button>
+                  <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-calendar-check me-1"></i>Interventions</button>
+                </div>
+              </div></div>
+            </div>
+            <div class="col-lg-8">
+              <div class="bg-white rounded-3 border p-3 mb-3">
+                <h6 class="fw-semibold mb-2">Cultures</h6>
+                <table class="table table-sm mb-0">
+                  <thead class="table-light"><tr><th>Espèce</th><th>Sup.</th><th>Arbres</th><th>Rend. kg/ha</th><th>Prix/kg</th><th>Revenu brut</th><th>Marge nette</th></tr></thead>
+                  <tbody>
+                    <tr><td>🍎 Pommier Golden</td><td>1.8 ha</td><td>360</td><td>18 000</td><td>2.8 MAD</td><td class="text-success fw-medium">90 720 MAD</td><td class="text-success fw-medium">68 880 MAD</td></tr>
+                    <tr><td>🍎 Pommier Gala</td><td>1.2 ha</td><td>240</td><td>16 000</td><td>3.2 MAD</td><td class="text-success fw-medium">61 440 MAD</td><td class="text-success fw-medium">47 640 MAD</td></tr>
+                    <tr><td>🫒 Olivier Picholine</td><td>2.2 ha</td><td>330</td><td>3 200</td><td>4.5 MAD</td><td class="text-success fw-medium">31 680 MAD</td><td class="text-success fw-medium">21 120 MAD</td></tr>
+                  </tbody>
+                  <tfoot class="table-light fw-semibold"><tr><td colspan="5">Total</td><td class="text-success">183 840 MAD</td><td>137 640 MAD</td></tr></tfoot>
+                </table>
+              </div>
+              <div class="bg-white rounded-3 border p-3">
+                <h6 class="fw-semibold mb-2">Prochaines interventions</h6>
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light"><tr><th>Type</th><th>Description</th><th>Date</th><th>Coût</th><th>Statut</th></tr></thead>
+                  <tbody>
+                    <tr><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-droplet me-1"></i>Traitement</span></td><td class="small">Insecticide carpocapse 1ère génération</td><td class="small">15 mai 2026</td><td class="small">2 200 MAD</td><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">En retard</span></td></tr>
+                    <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small">Récolte pommes Gala</td><td class="small">25 août 2026</td><td class="small">5 000 MAD</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Planifiée</span></td></tr>
+                    <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small">Récolte pommes Golden</td><td class="small">20 sep. 2026</td><td class="small">6 600 MAD</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Planifiée</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ INTERVENTIONS ════════════════════════════════════════════ -->
+        <div id="s-interventions" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Interventions</h6></div>
+          <div class="d-flex flex-wrap gap-1 mb-3">
+            <button class="btn btn-sm btn-success">Toutes</button>
+            <button class="btn btn-sm btn-outline-secondary">Sentier Aït Benhaddou</button>
+            <button class="btn btn-sm btn-outline-secondary">Sentier Ait Bouguemez</button>
+            <button class="btn btn-sm btn-outline-secondary">Domaine Arboricole</button>
+            <button class="btn btn-sm btn-outline-secondary">Terrain Vide</button>
+            <button class="btn btn-sm btn-outline-danger ms-auto"><i class="bi bi-exclamation-triangle me-1"></i>En retard (4)</button>
+            <button class="btn btn-sm btn-success"><i class="bi bi-plus me-1"></i>Nouvelle</button>
+          </div>
+          <div class="row g-2 mb-3">
+            <div class="col-4"><div class="stat-card text-center p-2"><div class="fw-bold fs-5">18</div><div class="text-muted small">Total</div></div></div>
+            <div class="col-4"><div class="stat-card text-center p-2"><div class="fw-bold fs-5 text-success">5</div><div class="text-muted small">Réalisées</div></div></div>
+            <div class="col-4"><div class="stat-card text-center p-2"><div class="fw-bold fs-5">56 300 MAD</div><div class="text-muted small">Coût total</div></div></div>
+          </div>
+          <div class="bg-white rounded-3 border overflow-hidden">
+            <table class="table table-hover table-sm mb-0">
+              <thead class="table-light"><tr><th>Type</th><th>Parcelle</th><th>Description</th><th>Date prévue</th><th>J/h</th><th>Coût</th><th>Statut</th><th></th></tr></thead>
+              <tbody>
+                <tr class="table-danger"><td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"><i class="bi bi-scissors me-1"></i>Taille</span></td><td class="small fw-medium">Domaine Arboricole</td><td class="small">Taille fructification pommiers Golden</td><td class="small">15 jan. 2026</td><td class="small text-center">6</td><td class="small">2 000</td><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">En retard</span></td><td><button class="btn btn-outline-success" style="font-size:.65rem;padding:2px 7px"><i class="bi bi-check2"></i></button></td></tr>
+                <tr style="background:#fff9e6"><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-bag me-1"></i>Fertilisation</span></td><td class="small fw-medium">Domaine Arboricole</td><td class="small">Apport engrais azoté pré-floraison</td><td class="small">20 mar. 2026</td><td class="small text-center">2</td><td class="small">1 400</td><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check2 me-1"></i>Réalisée 22 mar.</span></td><td></td></tr>
+                <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small fw-medium">Domaine Arboricole</td><td class="small">Récolte pommes Gala (maturité précoce)</td><td class="small">25 aoû. 2026</td><td class="small text-center">15</td><td class="small">5 000</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">J+82</span></td><td><button class="btn btn-outline-success" style="font-size:.65rem;padding:2px 7px"><i class="bi bi-check2"></i></button></td></tr>
+                <tr><td><span class="badge bg-dark bg-opacity-10 text-dark border border-dark border-opacity-25"><i class="bi bi-tools me-1"></i>Aménagement</span></td><td class="small fw-medium">Sentier Aït Benhaddou</td><td class="small">Balisage et signalétique sentier (4 km)</td><td class="small">1 avr. 2026</td><td class="small text-center">10</td><td class="small">8 000</td><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">En retard</span></td><td><button class="btn btn-outline-success" style="font-size:.65rem;padding:2px 7px"><i class="bi bi-check2"></i></button></td></tr>
+                <tr><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25"><i class="bi bi-eye me-1"></i>Surveillance</span></td><td class="small fw-medium">Terrain Vide Oulmès</td><td class="small">Analyse de sol (pH, texture, M.O.)</td><td class="small">10 juin 2026</td><td class="small text-center">1</td><td class="small">2 500</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">J+6</span></td><td><button class="btn btn-outline-success" style="font-size:.65rem;padding:2px 7px"><i class="bi bi-check2"></i></button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ═══ CALENDRIER ═══════════════════════════════════════════════ -->
+        <div id="s-calendrier" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Calendrier annuel 2026</h6></div>
+          <div class="bg-white rounded-3 border overflow-auto">
+            <table class="table table-bordered table-sm mb-0" style="min-width:800px">
+              <thead><tr class="table-dark"><th style="width:160px">Parcelle / Type</th><th class="text-center small">Jan</th><th class="text-center small">Fév</th><th class="text-center small">Mar</th><th class="text-center small">Avr</th><th class="text-center small">Mai</th><th class="text-center small">Juin</th><th class="text-center small">Juil</th><th class="text-center small">Aoû</th><th class="text-center small">Sep</th><th class="text-center small">Oct</th><th class="text-center small">Nov</th><th class="text-center small">Déc</th></tr></thead>
+              <tbody>
+                <tr class="table-light"><td colspan="13" class="fw-semibold small py-1 ps-2"><i class="bi bi-map me-1 text-success"></i>Domaine Arboricole Immouzer</td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-scissors me-1 text-primary"></i>Taille</td><td class="text-center"><span class="d-inline-block rounded-circle bg-success" style="width:10px;height:10px" title="Réalisée"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px" title="Taille oliviers"></span></td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-droplet me-1 text-danger"></i>Traitement</td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-success" style="width:10px;height:10px"></span></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-danger" style="width:10px;height:10px"></span></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-bag me-1 text-success"></i>Fertilisation</td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-success" style="width:10px;height:10px"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-basket me-1 text-warning"></i>Récolte</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td></td></tr>
+                <tr class="table-light"><td colspan="13" class="fw-semibold small py-1 ps-2"><i class="bi bi-map me-1 text-success"></i>Sentier Aït Benhaddou</td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-tools me-1 text-dark"></i>Aménagement</td><td></td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-danger" style="width:10px;height:10px"></span><span class="d-inline-block rounded-circle bg-danger ms-1" style="width:10px;height:10px"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-calendar-check me-1 text-success"></i>Entretien</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td></td><td></td></tr>
+                <tr class="table-light"><td colspan="13" class="fw-semibold small py-1 ps-2"><i class="bi bi-map me-1 text-success"></i>Terrain Vide Oulmès</td></tr>
+                <tr><td class="small ps-3"><i class="bi bi-eye me-1 text-secondary"></i>Surveillance</td><td></td><td></td><td></td><td></td><td></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td class="text-center"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span></td><td></td><td></td><td></td><td></td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-2 d-flex flex-wrap gap-3">
+            <span class="small text-muted"><span class="d-inline-block rounded-circle bg-success" style="width:10px;height:10px"></span> Réalisée</span>
+            <span class="small text-muted"><span class="d-inline-block rounded-circle bg-danger" style="width:10px;height:10px"></span> En retard</span>
+            <span class="small text-muted"><span class="d-inline-block rounded-circle bg-primary" style="width:10px;height:10px"></span> Planifiée</span>
+          </div>
+        </div>
+
+        <!-- ═══ RENTABILITÉ ═══════════════════════════════════════════════ -->
+        <div id="s-rentabilite" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Rentabilité</h6></div>
+          <div class="row g-2 mb-3">
+            <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><div class="text-muted small mb-1">Sentier Aït Benhaddou</div><div class="fs-5 fw-bold text-success">47 000 MAD</div><div class="text-muted small">5 529 MAD/ha</div><div class="d-flex justify-content-between small mt-1"><span>Revenus</span><span class="text-success fw-medium">85 000 MAD</span></div><div class="d-flex justify-content-between small"><span>Charges</span><span class="text-danger fw-medium">38 000 MAD</span></div></div><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">EcoTourisme</span></div><div class="mt-2"><button class="btn btn-xs btn-outline-success" style="font-size:.72rem;padding:3px 10px">Analyse détaillée →</button></div></div></div>
+            <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><div class="text-muted small mb-1">Domaine Arboricole Immouzer</div><div class="fs-5 fw-bold text-success">54 500 MAD</div><div class="text-muted small">10 480 MAD/ha</div><div class="d-flex justify-content-between small mt-1"><span>Revenus</span><span class="text-success fw-medium">96 000 MAD</span></div><div class="d-flex justify-content-between small"><span>Charges</span><span class="text-danger fw-medium">41 500 MAD</span></div></div><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Arboricole</span></div><div class="mt-2"><button class="btn btn-xs btn-outline-success" style="font-size:.72rem;padding:3px 10px">Analyse détaillée →</button></div></div></div>
+            <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><div class="text-muted small mb-1">Terrain Vide Oulmès</div><div class="fs-5 fw-bold text-danger">-3 500 MAD</div><div class="text-muted small">Coût d'opportunité</div><div class="d-flex justify-content-between small mt-1"><span>Revenus</span><span class="text-success fw-medium">0 MAD</span></div><div class="d-flex justify-content-between small"><span>Charges</span><span class="text-danger fw-medium">3 500 MAD</span></div></div><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">TerrainVide</span></div><div class="mt-2"><button class="btn btn-xs btn-outline-success" style="font-size:.72rem;padding:3px 10px">Analyse détaillée →</button></div></div></div>
+          </div>
+          <div class="bg-white rounded-3 border p-3 mb-3">
+            <h6 class="fw-semibold mb-2">Historique rendements – Domaine Arboricole</h6>
+            <table class="table table-sm table-hover">
+              <thead class="table-light"><tr><th>Année</th><th>Espèce</th><th>Quantité (kg)</th><th>Prix (MAD/kg)</th><th>Revenu brut</th><th>Charges</th><th>Marge nette</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td class="fw-medium">2025</td><td>🍎 Pommier Golden</td><td>30 500</td><td>2.9</td><td class="text-success fw-medium">88 450 MAD</td><td class="text-danger">22 000 MAD</td><td class="fw-semibold text-success">66 450 MAD</td><td class="text-muted small"></td></tr>
+                <tr><td class="fw-medium">2025</td><td>🫒 Olivier Picholine</td><td>7 000</td><td>4.6</td><td class="text-success fw-medium">32 200 MAD</td><td class="text-danger">10 560 MAD</td><td class="fw-semibold text-success">21 640 MAD</td><td class="text-muted small">Excellente campagne</td></tr>
+                <tr><td class="fw-medium">2024</td><td>🍎 Pommier Golden</td><td>32 000</td><td>2.8</td><td class="text-success fw-medium">89 600 MAD</td><td class="text-danger">22 500 MAD</td><td class="fw-semibold text-success">67 100 MAD</td><td class="text-muted small">Rendement record</td></tr>
+                <tr><td class="fw-medium">2024</td><td>🫒 Olivier Picholine</td><td>4 200</td><td>4.5</td><td class="text-success fw-medium">18 900 MAD</td><td class="text-danger">10 560 MAD</td><td class="fw-semibold text-success">8 340 MAD</td><td class="text-muted small">Année de repos</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="bg-white rounded-3 border p-3 mb-3"><h6 class="fw-semibold mb-2">Évolution revenus bruts par espèce</h6><canvas id="rentChart" height="90"></canvas></div>
+          <div class="bg-white rounded-3 border p-3">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-calculator me-2"></i>Simulateur de marge</h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">🍎 Pommier Golden – Prix vente (MAD/kg)</label>
+                <input type="range" class="form-range" min="1" max="10" step="0.1" value="2.8" id="sl1" oninput="simUpdate(1,this.value,32400,21600)"/>
+                <div class="d-flex justify-content-between small text-muted"><span>1 MAD</span><span id="sv1" class="fw-bold text-success">2.8 MAD/kg</span><span>10 MAD</span></div>
+                <div class="small mt-1">Marge simulée : <span id="sm1" class="fw-bold text-success">68 880 MAD</span></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">🍎 Pommier Gala – Prix vente (MAD/kg)</label>
+                <input type="range" class="form-range" min="1" max="10" step="0.1" value="3.2" id="sl2" oninput="simUpdate(2,this.value,19200,13800)"/>
+                <div class="d-flex justify-content-between small text-muted"><span>1 MAD</span><span id="sv2" class="fw-bold text-success">3.2 MAD/kg</span><span>10 MAD</span></div>
+                <div class="small mt-1">Marge simulée : <span id="sm2" class="fw-bold text-success">47 640 MAD</span></div>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small fw-semibold">🫒 Olivier Picholine – Prix vente (MAD/kg)</label>
+                <input type="range" class="form-range" min="1" max="10" step="0.1" value="4.5" id="sl3" oninput="simUpdate(3,this.value,7040,10560)"/>
+                <div class="d-flex justify-content-between small text-muted"><span>1 MAD</span><span id="sv3" class="fw-bold text-success">4.5 MAD/kg</span><span>10 MAD</span></div>
+                <div class="small mt-1">Marge simulée : <span id="sm3" class="fw-bold text-success">21 120 MAD</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ ÉCO-TOURISME ════════════════════════════════════════════ -->
+        <div id="s-ecotourisme" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Éco-tourisme</h6></div>
+          <div class="alert border-0 mb-3" style="background:#e0f2fe"><i class="bi bi-info-circle me-2"></i><strong>Potentiel identifié</strong> — 2 terrains avec fort potentiel pour circuits de randonnée, hébergement léger et éco-tourisme.</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6"><div class="parcelle-card"><div class="strip strip-eco" style="height:5px"></div><div class="p-3"><div class="d-flex justify-content-between mb-2"><div><h6 class="fw-bold mb-1">Sentier Aït Benhaddou</h6><div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>Province de Ouarzazate · Alt. 1 200 m</div></div><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">8.5 ha</span></div><p class="text-muted small mb-2">Zone présaharienne, vue panoramique Vallée du Drâa, bivouacs écologiques.</p><div class="row g-1 text-center mb-2"><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">85 000 MAD</div><div style="font-size:.65rem" class="text-muted">Revenus</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#fff7ed"><div class="fw-bold small text-warning">38 000 MAD</div><div style="font-size:.65rem" class="text-muted">Charges</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">47 000 MAD</div><div style="font-size:.65rem" class="text-muted">Marge</div></div></div></div><div class="d-flex gap-2"><button class="btn btn-sm btn-info text-white flex-grow-1" onclick="show('businessplan',null)"><i class="bi bi-file-earmark-text me-1"></i>Business Plan</button><button class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></button></div></div></div></div>
+            <div class="col-md-6"><div class="parcelle-card"><div class="strip strip-eco" style="height:5px"></div><div class="p-3"><div class="d-flex justify-content-between mb-2"><div><h6 class="fw-bold mb-1">Sentier Ait Bouguemez</h6><div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>Province d'Azilal · Alt. 1 900 m</div></div><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">12 ha</span></div><p class="text-muted small mb-2">Haute montagne, « Vallée Heureuse », circuits GR, villages berbères, yourtes.</p><div class="row g-1 text-center mb-2"><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">120 000 MAD</div><div style="font-size:.65rem" class="text-muted">Revenus</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#fff7ed"><div class="fw-bold small text-warning">52 000 MAD</div><div style="font-size:.65rem" class="text-muted">Charges</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">68 000 MAD</div><div style="font-size:.65rem" class="text-muted">Marge</div></div></div></div><div class="d-flex gap-2"><button class="btn btn-sm btn-info text-white flex-grow-1" onclick="show('businessplan',null)"><i class="bi bi-file-earmark-text me-1"></i>Business Plan</button><button class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></button></div></div></div></div>
+          </div>
+          <div class="bg-white rounded-3 border p-3 mb-3">
+            <h6 class="fw-semibold mb-2">Comparaison des 4 scénarios de revenus</h6>
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light"><tr><th>Scénario</th><th>Modèle</th><th>Visiteurs/an</th><th>Revenu brut</th><th>Charges</th><th>Marge nette</th><th>Retour invest.</th></tr></thead>
+              <tbody>
+                <tr><td class="fw-medium">Entrées &amp; Bivouac (P1)</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">EntreesCircuits</span></td><td>800</td><td class="text-success fw-medium">112 800 MAD</td><td class="text-danger">92 000 MAD</td><td class="fw-semibold text-success">20 800 MAD</td><td>7.2 ans</td></tr>
+                <tr><td class="fw-medium">Hébergement Premium (P1)</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">HebergementLeger</span></td><td>400</td><td class="text-success fw-medium">280 000 MAD</td><td class="text-danger">171 000 MAD</td><td class="fw-semibold text-success">109 000 MAD</td><td>2.6 ans</td></tr>
+                <tr><td class="fw-medium">Circuit Trekking GR (P2)</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">GuidesDeTrekking</span></td><td>1 200</td><td class="text-success fw-medium">342 000 MAD</td><td class="text-danger">184 400 MAD</td><td class="fw-semibold text-success">157 600 MAD</td><td>1.3 ans</td></tr>
+                <tr style="background:#f0fdf4"><td class="fw-medium">Éco-lodge &amp; Randonnée (P2) ⭐</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Combiné</span></td><td>900</td><td class="text-success fw-medium">552 000 MAD</td><td class="text-danger">272 000 MAD</td><td class="fw-bold text-success">280 000 MAD</td><td>1.4 ans</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="bg-white rounded-3 border p-3"><h6 class="fw-semibold mb-2">Marge nette par scénario</h6><canvas id="ecoChart" height="90"></canvas></div>
+        </div>
+
+        <!-- ═══ BUSINESS PLAN ════════════════════════════════════════════ -->
+        <div id="s-businessplan" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Business Plan – Sentier Ait Bouguemez</h6></div>
+          <div class="bg-white rounded-3 border p-4 mb-3" style="border-top:4px solid #52b788 !important">
+            <div class="row align-items-center">
+              <div class="col-md-8"><div class="text-muted small fw-semibold text-uppercase mb-1" style="letter-spacing:.1em">Fiche de présentation</div><h4 class="fw-bold mb-1">Projet Éco-tourisme</h4><h5 class="text-success fw-semibold">Sentier Vallée des Ait Bouguemez</h5><p class="text-muted mb-0"><i class="bi bi-geo-alt me-1"></i>Province d'Azilal, Haut Atlas · 1 900 m · 12 ha</p></div>
+              <div class="col-md-4 text-md-end mt-3 mt-md-0"><div class="text-muted small">Meilleur scénario</div><div class="fs-4 fw-bold text-success">280 000 MAD/an</div><div class="text-muted small">ROI : 1.4 ans</div></div>
+            </div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6"><div class="bg-white rounded-3 border p-3 h-100"><h6 class="fw-semibold mb-2"><i class="bi bi-star me-2 text-warning"></i>Atouts du site</h6><ul class="list-unstyled mb-0 small"><li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>Altitude 1 900 m – climat montagnard attractif</li><li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>12 ha – espace pour circuits variés</li><li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>Proximité patrimoine culturel amazigh</li><li class="py-1 border-bottom"><i class="bi bi-check-circle text-success me-2"></i>Biodiversité floristique exceptionnelle</li><li class="py-1"><i class="bi bi-check-circle text-success me-2"></i>Demande éco-tourisme Maroc +12%/an</li></ul></div></div>
+            <div class="col-md-6"><div class="bg-white rounded-3 border p-3 h-100"><h6 class="fw-semibold mb-2"><i class="bi bi-currency-exchange me-2 text-success"></i>Sources de revenus</h6><ul class="list-unstyled mb-0 small"><li class="py-1 border-bottom"><i class="bi bi-compass text-info me-2"></i><strong>Circuits guidés</strong> – 150–250 MAD/personne</li><li class="py-1 border-bottom"><i class="bi bi-moon-stars text-primary me-2"></i><strong>Bivouac / Gîte</strong> – 120–350 MAD/nuit</li><li class="py-1 border-bottom"><i class="bi bi-ticket-perforated text-warning me-2"></i><strong>Droits d'accès</strong> – 30–50 MAD/visiteur</li><li class="py-1 border-bottom"><i class="bi bi-person-check text-success me-2"></i><strong>Guides locaux</strong> – emploi 2–5 guides</li><li class="py-1"><i class="bi bi-basket text-danger me-2"></i><strong>Produits locaux</strong> – miel, plantes aromatiques</li></ul></div></div>
+          </div>
+          <div class="bg-white rounded-3 border p-3 mb-3">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-table me-2"></i>Projections financières – 2 scénarios (Parcelle 2)</h6>
+            <div class="row g-3">
+              <div class="col-md-6"><div class="rounded-3 border p-3"><h6 class="fw-semibold">Circuit Trekking GR (P2)</h6><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mb-2">GuidesDeTrekking</span><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Visiteurs/an</span><span class="fw-medium">1 200</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Investissement initial</span><span class="fw-medium">200 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Revenu brut</span><span class="text-success fw-medium">342 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Total charges</span><span class="text-danger">184 400 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="fw-semibold">Marge nette</span><span class="fw-bold text-success">157 600 MAD</span></div><div class="d-flex justify-content-between small"><span class="text-muted">Retour sur invest.</span><span class="fw-medium">1.3 ans</span></div></div></div>
+              <div class="col-md-6"><div class="rounded-3 border border-success p-3"><span class="badge bg-success mb-2"><i class="bi bi-trophy me-1"></i>Meilleur ROI</span><h6 class="fw-semibold">Éco-lodge &amp; Randonnée (P2)</h6><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mb-2">Combiné</span><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Visiteurs/an</span><span class="fw-medium">900</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Investissement initial</span><span class="fw-medium">400 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Revenu brut</span><span class="text-success fw-medium">552 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Total charges</span><span class="text-danger">272 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="fw-semibold">Marge nette</span><span class="fw-bold text-success">280 000 MAD</span></div><div class="d-flex justify-content-between small"><span class="text-muted">Retour sur invest.</span><span class="fw-medium">1.4 ans</span></div></div></div>
+            </div>
+          </div>
+          <div class="bg-white rounded-3 border p-3">
+            <h6 class="fw-semibold mb-3"><i class="bi bi-file-earmark-check me-2 text-primary"></i>Démarches réglementaires au Maroc</h6>
+            <div class="row g-2">
+              <div class="col-md-4"><div class="rounded-2 p-3" style="background:#eff6ff"><div class="fw-semibold small mb-2"><i class="bi bi-building me-1 text-primary"></i>Classement Tourisme</div><ul class="list-unstyled small text-muted mb-0"><li>→ Ministère du Tourisme</li><li>→ Classement gîte rural 1–5 ⭐</li><li>→ Registre Commerce + Patente</li></ul></div></div>
+              <div class="col-md-4"><div class="rounded-2 p-3" style="background:#f0fdf4"><div class="fw-semibold small mb-2"><i class="bi bi-tree me-1 text-success"></i>Environnement</div><ul class="list-unstyled small text-muted mb-0"><li>→ Étude d'impact (EIE)</li><li>→ Haut Commissariat Eaux &amp; Forêts</li><li>→ Autorisation construction légère</li></ul></div></div>
+              <div class="col-md-4"><div class="rounded-2 p-3" style="background:#fef3c7"><div class="fw-semibold small mb-2"><i class="bi bi-people me-1 text-warning"></i>Financement</div><ul class="list-unstyled small text-muted mb-0"><li>→ Fonds Hassan II</li><li>→ Programme INDH</li><li>→ Fonds FIDA montagne</li></ul></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ ÉVALUATION ════════════════════════════════════════════════ -->
+        <div id="s-evaluation" class="screen">
+          <div class="topbar mb-3"><h6 class="mb-0 fw-semibold">Évaluation Terrain Vide</h6></div>
+          <div class="alert border-0 mb-3" style="background:#fef3c7"><i class="bi bi-clipboard-data me-2"></i><strong>Cadre d'évaluation</strong> — Ce module aide à décider si le terrain vide vaut la peine d'être développé, et selon quel scénario.</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-4">
+              <div class="parcelle-card h-100"><div class="strip strip-vide" style="height:5px"></div><div class="p-3">
+                <h6 class="fw-bold">Terrain Vide Oulmès</h6>
+                <div class="text-muted small mb-1"><i class="bi bi-geo-alt me-1"></i>Oulmès, Province de Khénifra</div>
+                <div class="text-muted small mb-2"><i class="bi bi-triangle me-1"></i>1 100 m</div>
+                <p class="text-muted small">Terrain non exploité en zone tempérée humide. Analyse de sol et étude hydrologique en cours.</p>
+                <div class="text-center rounded-2 p-2 mb-2" style="background:#fef3c7"><div class="fw-bold fs-5">3 ha</div><div class="text-muted small">Surface disponible</div></div>
+                <div class="text-center rounded-2 p-2" style="background:#fee2e2"><div class="fw-bold text-danger">-3 500 MAD/an</div><div class="text-muted small">Coût d'opportunité actuel</div></div>
+              </div></div>
+            </div>
+            <div class="col-md-8">
+              <div class="bg-white rounded-3 border p-3 h-100">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-check2-square me-2"></i>Grille de notation (7 critères)</h6>
+                <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:160px" class="small fw-medium">Qualité du sol</div><div class="d-flex gap-1">
+                  <span class="rounded-1" style="width:18px;height:8px;background:#e9a84c"></span><span class="rounded-1" style="width:18px;height:8px;background:#e9a84c"></span><span class="rounded-1" style="width:18px;height:8px;background:#e9a84c"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span>
+                </div><div class="text-muted small flex-grow-1">Analyse en cours – potentiel modéré</div></div>
+                <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:160px" class="small fw-medium">Ressource en eau</div><div class="d-flex gap-1">
+                  <span class="rounded-1" style="width:18px;height:8px;background:#ef4444"></span><span class="rounded-1" style="width:18px;height:8px;background:#ef4444"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span>
+                </div><div class="text-muted small flex-grow-1">Étude hydrologique prévue – incertitude élevée</div></div>
+                <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:160px" class="small fw-medium">Accessibilité</div><div class="d-flex gap-1">
+                  <span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span>
+                </div><div class="text-muted small flex-grow-1">Bon accès route – atout logistique</div></div>
+                <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:160px" class="small fw-medium">Contexte foncier</div><div class="d-flex gap-1">
+                  <span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span>
+                </div><div class="text-muted small flex-grow-1">Titre foncier clair – aucun litige</div></div>
+                <div class="d-flex align-items-center gap-2 py-2"><div style="min-width:160px" class="small fw-medium">Marché local</div><div class="d-flex gap-1">
+                  <span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span>
+                </div><div class="text-muted small flex-grow-1">Coopératives actives – débouchés disponibles</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-2"><div class="rounded-2 p-2" style="background:#f0fdf4"><i class="bi bi-tree text-success"></i></div><h6 class="fw-semibold mb-0">Plantation arboricole</h6></div><p class="text-muted small mb-2">Plantation pommiers ou noyers sur 3 ha. Production en 3–5 ans.</p><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Investissement</span><span class="fw-medium">45 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Revenu brut (an 5)</span><span class="fw-medium">85 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Marge nette</span><span class="fw-medium text-success">38 000 MAD</span></div><div class="d-flex justify-content-between small mb-2"><span class="text-muted">ROI</span><span class="fw-medium">~4 ans</span></div><hr class="my-2"><div class="text-muted" style="font-size:.7rem"><strong>Risques :</strong> Dépend qualité sol &amp; eau · Délai 3–5 ans · Risque gel</div></div></div>
+            <div class="col-md-4"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-2"><div class="rounded-2 p-2" style="background:#fef3c7"><i class="bi bi-people text-warning"></i></div><h6 class="fw-semibold mb-0">Location à un agriculteur</h6></div><p class="text-muted small mb-2">Fermage annuel à un arboriculteur local. Revenu passif immédiat.</p><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Loyer annuel</span><span class="fw-medium">8 000–12 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Charges propriétaire</span><span class="fw-medium">&lt; 1 000 MAD/an</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Marge nette</span><span class="fw-medium text-success">7 000–11 000 MAD</span></div><div class="d-flex justify-content-between small mb-2"><span class="text-muted">ROI</span><span class="fw-medium">Immédiat</span></div><hr class="my-2"><div class="text-muted" style="font-size:.7rem"><strong>Risques :</strong> Revenus faibles · Dépendance locataire</div></div></div>
+            <div class="col-md-4"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-2"><div class="rounded-2 p-2" style="background:#eff6ff"><i class="bi bi-hourglass text-info"></i></div><h6 class="fw-semibold mb-0">Attente et valorisation</h6></div><p class="text-muted small mb-2">Conserver le terrain 2–3 ans, compléter les études, puis décider.</p><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Coût annuel</span><span class="fw-medium text-danger">-3 500 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Option value</span><span class="fw-medium">Haute</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Flexibilité</span><span class="fw-medium">Maximale</span></div><div class="d-flex justify-content-between small mb-2"><span class="text-muted">Décision optimale</span><span class="fw-medium">Après études</span></div><hr class="my-2"><div class="text-muted" style="font-size:.7rem"><strong>Risques :</strong> Coût d'opportunité · Inflation</div></div></div>
+          </div>
+          <div class="bg-white rounded-3 border p-3 mt-3">
+            <h6 class="fw-semibold mb-2"><i class="bi bi-lightbulb me-2 text-warning"></i>Recommandation provisoire</h6>
+            <p class="text-muted small mb-2">En l'état actuel (analyses de sol et étude hydrologique en cours), la <strong>location à court terme</strong> permet de couvrir les frais de portage tout en laissant le temps de finaliser les études. Si l'analyse de sol confirme un potentiel arboricole, le scénario 1 devient le plus rentable à horizon 7 ans.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  if(btn) { document.querySelectorAll('#screenTabs .nav-link').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+  // Update sidebar
+  document.querySelectorAll('.s-link').forEach(l => l.classList.remove('active'));
+}
+
+// Dashboard chart
+new Chart(document.getElementById('dashChart'),{type:'line',data:{labels:[2023,2024,2025],datasets:[
+  {label:'Pommier Golden',data:[72500,89600,88450],borderColor:'#52b788',backgroundColor:'#52b78822',tension:.3,fill:true,borderWidth:2},
+  {label:'Pommier Gala',data:[37200,44100,43200],borderColor:'#e9a84c',backgroundColor:'#e9a84c22',tension:.3,fill:true,borderWidth:2},
+  {label:'Olivier Picholine',data:[16740,8340,21640],borderColor:'#94a3b8',backgroundColor:'#94a3b822',tension:.3,fill:true,borderWidth:2},
+]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v.toLocaleString('fr-MA')+' MAD'}}}}});
+
+// Rentabilité chart
+new Chart(document.getElementById('rentChart'),{type:'bar',data:{labels:[2023,2024,2025],datasets:[
+  {label:'Pommier Golden',data:[72500,89600,88450],backgroundColor:'#52b78888',borderColor:'#52b788',borderWidth:1,borderRadius:4},
+  {label:'Pommier Gala',data:[51000,58900,59200],backgroundColor:'#e9a84c88',borderColor:'#e9a84c',borderWidth:1,borderRadius:4},
+  {label:'Olivier Picholine',data:[27300,18900,32200],backgroundColor:'#94a3b888',borderColor:'#94a3b8',borderWidth:1,borderRadius:4},
+]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v.toLocaleString('fr-MA')+' MAD'}}}}});
+
+// Éco-tourisme chart
+new Chart(document.getElementById('ecoChart'),{type:'bar',data:{labels:['Entrées & Bivouac P1','Hébergement Premium P1','Circuit Trekking GR P2','Éco-lodge & Rando P2'],datasets:[
+  {label:'Revenu brut',data:[112800,280000,342000,552000],backgroundColor:'#52b78888',borderColor:'#52b788',borderWidth:1,borderRadius:4},
+  {label:'Marge nette',data:[20800,109000,157600,280000],backgroundColor:'#e9a84c88',borderColor:'#e9a84c',borderWidth:1,borderRadius:4},
+]},options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v.toLocaleString('fr-MA')+' MAD'}}}}});
+
+// Simulateur
+function simUpdate(id,prix,qty,cout){
+  prix=parseFloat(prix);
+  const marge=(qty*prix)-cout;
+  document.getElementById('sv'+id).textContent=prix.toFixed(1)+' MAD/kg';
+  const m=document.getElementById('sm'+id);
+  m.textContent=marge.toLocaleString('fr-MA',{maximumFractionDigits:0})+' MAD';
+  m.className='fw-bold '+(marge>=0?'text-success':'text-danger');
+}
+</script>
+</body>
+</html>
