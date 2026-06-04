@@ -1,0 +1,128 @@
+@model List<ClaudeMVC.Models.Intervention>
+@{
+    ViewData["Title"] = "Interventions";
+    var parcelles = ViewBag.Parcelles as List<ClaudeMVC.Models.Parcelle>;
+    var selectedId = ViewBag.SelectedParcelle as int?;
+    var total = Model.Sum(i => i.CoutTotal);
+    var realisees = Model.Count(i => i.EstRealisee);
+    var enRetard = Model.Count(i => !i.EstRealisee && i.DatePrevue < DateTime.Today);
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Index" class="btn btn-sm @(selectedId == null ? "btn-success" : "btn-outline-secondary")">Toutes</a>
+        @foreach (var p in parcelles!)
+        {
+            <a asp-action="Index" asp-route-parcelleId="@p.Id"
+               class="btn btn-sm @(selectedId == p.Id ? "btn-success" : "btn-outline-secondary")">
+                @p.Nom
+            </a>
+        }
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" asp-route-enRetard="true" class="btn btn-sm btn-outline-danger">
+            <i class="bi bi-exclamation-triangle me-1"></i>En retard (@enRetard)
+        </a>
+        <a asp-action="Create" class="btn btn-sm btn-success">
+            <i class="bi bi-plus me-1"></i>Nouvelle intervention
+        </a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-2 mb-3">
+    <div class="col-4">
+        <div class="stat-card text-center p-2">
+            <div class="fw-bold fs-5">@Model.Count</div>
+            <div class="text-muted small">Total</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card text-center p-2">
+            <div class="fw-bold fs-5 text-success">@realisees</div>
+            <div class="text-muted small">Réalisées</div>
+        </div>
+    </div>
+    <div class="col-4">
+        <div class="stat-card text-center p-2">
+            <div class="fw-bold fs-5">@total.ToString("N0") MAD</div>
+            <div class="text-muted small">Coût total</div>
+        </div>
+    </div>
+</div>
+
+<div class="bg-white rounded-3 border overflow-hidden">
+    <table class="table table-hover mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Type</th>
+                <th>Parcelle</th>
+                <th>Description</th>
+                <th>Date prévue</th>
+                <th>Jours/homme</th>
+                <th>Coût (MAD)</th>
+                <th>Statut</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var i in Model)
+            {
+                var rowClass = !i.EstRealisee && i.DatePrevue < DateTime.Today ? "table-danger" : "";
+                <tr class="@rowClass intervention-row">
+                    <td>
+                        <span class="badge bg-@i.CouleurType bg-opacity-10 text-@i.CouleurType border border-@i.CouleurType border-opacity-25">
+                            <i class="bi @i.IconeType me-1"></i>@i.Type
+                        </span>
+                    </td>
+                    <td class="small fw-medium">@i.NomParcelle</td>
+                    <td class="small">@i.Description</td>
+                    <td class="small">@i.DatePrevue.ToString("d MMM yyyy")</td>
+                    <td class="small text-center">@i.NombreJourneesHomme j</td>
+                    <td class="small fw-medium">@i.CoutTotal.ToString("N0")</td>
+                    <td>
+                        @if (i.EstRealisee)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                <i class="bi bi-check2 me-1"></i>Réalisée @i.DateRealisee?.ToString("d MMM")
+                            </span>
+                        }
+                        else if (i.DatePrevue < DateTime.Today)
+                        {
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                <i class="bi bi-clock me-1"></i>En retard
+                            </span>
+                        }
+                        else
+                        {
+                            var days = (i.DatePrevue - DateTime.Today).Days;
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
+                                J+@days
+                            </span>
+                        }
+                    </td>
+                    <td>
+                        @if (!i.EstRealisee)
+                        {
+                            <form asp-action="MarquerRealisee" method="post" style="display:inline">
+                                <input type="hidden" name="id" value="@i.Id" />
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-xs btn-outline-success" style="font-size:0.7rem;padding:2px 8px"
+                                        title="Marquer comme réalisée">
+                                    <i class="bi bi-check2"></i>
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (!Model.Any())
+    {
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-calendar-check fs-2 d-block mb-2 opacity-50"></i>
+            Aucune intervention trouvée
+        </div>
+    }
+</div>

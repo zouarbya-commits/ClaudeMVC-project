@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Terroir Manager – Preview v2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--green-dark:#1a3c2b;--green-mid:#2d6a4f;--green-light:#52b788;--amber:#e9a84c;}
+*{box-sizing:border-box;}
+body{background:#f4f6f4;font-family:'Segoe UI',system-ui,sans-serif;margin:0;}
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+.sidebar{width:220px;background:var(--green-dark);min-height:100vh;position:fixed;top:0;left:0;display:flex;flex-direction:column;z-index:200;}
+.sidebar-brand{padding:1rem;border-bottom:1px solid rgba(255,255,255,.1);}
+.sidebar-brand .brand-title{color:#fff;font-weight:700;font-size:1rem;}
+.sidebar-brand .brand-sub{color:var(--green-light);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;}
+.s-section{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);padding:.9rem 1rem .25rem;}
+.s-link{display:flex;align-items:center;gap:.55rem;padding:.42rem .9rem;margin:1px .4rem;border-radius:6px;color:rgba(255,255,255,.7);font-size:.82rem;cursor:pointer;transition:.15s;text-decoration:none;}
+.s-link:hover,.s-link.active{background:rgba(255,255,255,.11);color:#fff;}
+.s-link.active{background:var(--green-mid);}
+.sidebar-footer{padding:.75rem 1rem;border-top:1px solid rgba(255,255,255,.08);font-size:.65rem;color:rgba(255,255,255,.3);}
+
+/* ── MAIN ─────────────────────────────────────────────── */
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:.7rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.content{padding:1.5rem;flex:1;}
+
+/* ── SCREEN TABS ──────────────────────────────────────── */
+.screen-nav{background:#fff;border-bottom:1px solid #e5e7eb;padding:.5rem 1.5rem;display:flex;gap:.35rem;flex-wrap:wrap;position:sticky;top:49px;z-index:99;}
+.screen-tab{border:none;background:#f3f4f6;color:#555;padding:.3rem .75rem;border-radius:20px;font-size:.75rem;cursor:pointer;transition:.15s;}
+.screen-tab.active{background:var(--green-mid);color:#fff;}
+
+/* ── SCREENS ─────────────────────────────────────────── */
+.screen{display:none;animation:fadeIn .2s ease;}
+.screen.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+/* ── CARDS ────────────────────────────────────────────── */
+.stat-card{background:#fff;border-radius:12px;padding:1.1rem;border:1px solid #e5e7eb;transition:.2s;}
+.stat-card:hover{box-shadow:0 4px 14px rgba(0,0,0,.07);}
+.parcelle-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;transition:.2s;}
+.parcelle-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.09);}
+
+/* ── STRIPS ───────────────────────────────────────────── */
+.strip{height:5px;}
+.strip-eco{background:linear-gradient(90deg,#52b788,#2d9e6b);}
+.strip-arbo{background:linear-gradient(90deg,#e9a84c,#d4820f);}
+.strip-vide{background:linear-gradient(90deg,#94a3b8,#64748b);}
+.strip-mixte{background:linear-gradient(90deg,#6366f1,#8b5cf6);}
+
+/* ── MISC ─────────────────────────────────────────────── */
+.chip{display:inline-block;font-size:.7rem;padding:.18rem .55rem;border-radius:20px;font-weight:500;}
+.badge-mixte{background:rgba(99,102,241,.1);color:#4338ca;border:1px solid rgba(99,102,241,.25);}
+.dot{display:inline-block;border-radius:50%;width:10px;height:10px;}
+.type-card{border:1.5px solid #e5e7eb;border-radius:10px;padding:.75rem .5rem;text-align:center;cursor:pointer;min-width:90px;transition:.15s;}
+.type-card:hover{border-color:#52b788;background:#f0fdf4;}
+.type-card.selected{border-color:#52b788;background:#f0fdf4;box-shadow:0 0 0 3px rgba(82,183,136,.2);}
+table{font-size:.82rem;}
+.table-hover tbody tr:hover{background:#f9fafb;}
+</style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ════════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <i class="bi bi-geo-alt-fill text-success"></i>
+      <span class="brand-title">Terroir Manager</span>
+    </div>
+    <div class="brand-sub">Gestion Foncière &amp; Agricole</div>
+  </div>
+  <div style="overflow-y:auto;flex:1">
+    <div class="s-section">Vue d'ensemble</div>
+    <div class="s-link active" id="sl-dashboard" onclick="show('dashboard',this)"><i class="bi bi-grid-3x3-gap"></i>Tableau de bord</div>
+    <div class="s-section">Parcelles</div>
+    <div class="s-link" id="sl-parcelles" onclick="show('parcelles',this)"><i class="bi bi-map"></i>Mes Parcelles</div>
+    <div class="s-link" id="sl-create" onclick="show('create',this)"><i class="bi bi-plus-circle"></i>Nouvelle parcelle</div>
+    <div class="s-section">Opérations</div>
+    <div class="s-link" id="sl-interventions" onclick="show('interventions',this)"><i class="bi bi-calendar-check"></i>Interventions</div>
+    <div class="s-link" id="sl-calendrier" onclick="show('calendrier',this)"><i class="bi bi-calendar3"></i>Calendrier annuel</div>
+    <div class="s-section">Analyse</div>
+    <div class="s-link" id="sl-rentabilite" onclick="show('rentabilite',this)"><i class="bi bi-bar-chart-line"></i>Rentabilité</div>
+    <div class="s-link" id="sl-eco" onclick="show('eco',this)"><i class="bi bi-compass"></i>Éco-tourisme</div>
+    <div class="s-link" id="sl-regl" onclick="show('regl',this)"><i class="bi bi-file-earmark-text"></i>Réglementation</div>
+    <div class="s-link" id="sl-eval" onclick="show('eval',this)"><i class="bi bi-clipboard-data"></i>Évaluation terrain</div>
+  </div>
+  <div class="sidebar-footer">Maroc · 2026</div>
+</nav>
+
+<!-- ══ MAIN ═══════════════════════════════════════════ -->
+<div class="main">
+  <div class="topbar">
+    <h6 class="mb-0 fw-semibold" id="page-title">Tableau de bord</h6>
+    <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>mercredi 4 juin 2026</span>
+  </div>
+  <div class="screen-nav" id="screenNav">
+    <button class="screen-tab active" onclick="show('dashboard',null,this)">📊 Dashboard</button>
+    <button class="screen-tab" onclick="show('parcelles',null,this)">🗺️ Parcelles</button>
+    <button class="screen-tab" onclick="show('detail',null,this)">🔍 Fiche parcelle</button>
+    <button class="screen-tab" onclick="show('create',null,this)">➕ Nouvelle parcelle</button>
+    <button class="screen-tab" onclick="show('interventions',null,this)">📅 Interventions</button>
+    <button class="screen-tab" onclick="show('calendrier',null,this)">📆 Calendrier</button>
+    <button class="screen-tab" onclick="show('rentabilite',null,this)">💹 Rentabilité</button>
+    <button class="screen-tab" onclick="show('eco',null,this)">🧭 Éco-tourisme</button>
+    <button class="screen-tab" onclick="show('regl',null,this)">📋 Réglementation</button>
+    <button class="screen-tab" onclick="show('eval',null,this)">🔬 Évaluation</button>
+  </div>
+
+  <div class="content">
+
+  <!-- ══════════════════════════════════════════════════
+       1. DASHBOARD
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-dashboard" class="screen active">
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small mb-1">Superficie totale</div>
+              <div class="fs-5 fw-bold">4,58 ha</div>
+              <div class="text-muted small">4 parcelles</div>
+            </div>
+            <div style="font-size:1.6rem">🗺️</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small mb-1">Revenus estimés</div>
+              <div class="fs-5 fw-bold text-success">51 550 MAD</div>
+              <div class="text-muted small">annuel</div>
+            </div>
+            <div style="font-size:1.6rem">💰</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small mb-1">Marge nette</div>
+              <div class="fs-5 fw-bold text-success">27 850 MAD</div>
+              <div class="text-muted small">après charges</div>
+            </div>
+            <div style="font-size:1.6rem">📊</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="stat-card">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="text-muted small mb-1">Interventions</div>
+              <div class="fs-5 fw-bold">2 <span class="fs-6 text-muted">ce mois</span></div>
+              <div class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>3 en retard</div>
+            </div>
+            <div style="font-size:1.6rem">📅</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-lg-8">
+        <!-- Cartes parcelles -->
+        <div class="bg-white rounded-3 border p-3 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-semibold">Mes 4 Parcelles</h6>
+            <button class="btn btn-sm btn-outline-success" onclick="show('parcelles',null,null)">Voir tout</button>
+          </div>
+          <div class="row g-2">
+            <!-- A -->
+            <div class="col-6">
+              <div class="parcelle-card" onclick="show('detail',null,null)" style="cursor:pointer">
+                <div class="strip strip-mixte"></div>
+                <div class="p-2">
+                  <div class="fw-semibold small">Terrain A</div>
+                  <div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> À préciser</div>
+                  <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-muted" style="font-size:.7rem">3 400 m²</span>
+                    <span class="badge badge-mixte" style="font-size:.62rem">Mixte</span>
+                    <span class="text-warning" style="font-size:.7rem">En évaluation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- B -->
+            <div class="col-6">
+              <div class="parcelle-card" onclick="show('detail',null,null)" style="cursor:pointer">
+                <div class="strip strip-mixte"></div>
+                <div class="p-2">
+                  <div class="fw-semibold small">Terrain B – Verger pommiers</div>
+                  <div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> À préciser</div>
+                  <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-muted" style="font-size:.7rem">1 064 m²</span>
+                    <span class="badge badge-mixte" style="font-size:.62rem">Mixte</span>
+                    <span class="text-success" style="font-size:.7rem">2 250 MAD marge</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- C -->
+            <div class="col-6">
+              <div class="parcelle-card" onclick="show('detail',null,null)" style="cursor:pointer">
+                <div class="strip strip-arbo"></div>
+                <div class="p-2">
+                  <div class="fw-semibold small">Terrain C – Verger mixte</div>
+                  <div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> À préciser</div>
+                  <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-muted" style="font-size:.7rem">1.50 ha</span>
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25" style="font-size:.62rem">Arboricole</span>
+                    <span class="text-success" style="font-size:.7rem">29 500 MAD marge</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- D -->
+            <div class="col-6">
+              <div class="parcelle-card" onclick="show('detail',null,null)" style="cursor:pointer">
+                <div class="strip strip-vide"></div>
+                <div class="p-2">
+                  <div class="fw-semibold small">Terrain D</div>
+                  <div class="text-muted" style="font-size:.7rem"><i class="bi bi-geo-alt"></i> À préciser</div>
+                  <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                    <span class="text-muted" style="font-size:.7rem">3.00 ha</span>
+                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25" style="font-size:.62rem">Vide</span>
+                    <span class="text-danger" style="font-size:.7rem">-2 500 MAD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Chart rendements -->
+        <div class="bg-white rounded-3 border p-3">
+          <h6 class="fw-semibold mb-2 small">Rendements historiques – Terrain C (marge nette MAD)</h6>
+          <canvas id="dashChart" height="110"></canvas>
+        </div>
+      </div>
+
+      <!-- Prochaines interventions -->
+      <div class="col-lg-4">
+        <div class="bg-white rounded-3 border p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 fw-semibold small">Prochaines interventions</h6>
+            <button class="btn btn-sm btn-success" onclick="show('create-int',null,null)"><i class="bi bi-plus"></i></button>
+          </div>
+          <div class="border-bottom py-2">
+            <div class="d-flex gap-2">
+              <div class="rounded-2 p-1 flex-shrink-0" style="background:#f3f4f6"><i class="bi bi-eye text-secondary"></i></div>
+              <div>
+                <div class="small fw-medium">Analyse de sol – Terrain A</div>
+                <div class="text-muted" style="font-size:.7rem">Terrain A</div>
+                <span class="chip" style="background:#fef3c7;color:#92400e">15 juin · J+11</span>
+              </div>
+            </div>
+          </div>
+          <div class="border-bottom py-2">
+            <div class="d-flex gap-2">
+              <div class="rounded-2 p-1 flex-shrink-0" style="background:#f3f4f6"><i class="bi bi-water text-info"></i></div>
+              <div>
+                <div class="small fw-medium">Mise en route irrigation</div>
+                <div class="text-muted" style="font-size:.7rem">Terrain C – Verger mixte</div>
+                <span class="chip" style="background:#fef3c7;color:#92400e">1 juil. · J+27</span>
+              </div>
+            </div>
+          </div>
+          <div class="border-bottom py-2">
+            <div class="d-flex gap-2">
+              <div class="rounded-2 p-1 flex-shrink-0" style="background:#f3f4f6"><i class="bi bi-eye text-secondary"></i></div>
+              <div>
+                <div class="small fw-medium">Étude faisabilité – Terrain D</div>
+                <div class="text-muted" style="font-size:.7rem">Terrain D</div>
+                <span class="chip" style="background:#d1fae5;color:#065f46">1 juil. · J+27</span>
+              </div>
+            </div>
+          </div>
+          <div class="py-2">
+            <div class="d-flex gap-2">
+              <div class="rounded-2 p-1 flex-shrink-0" style="background:#f3f4f6"><i class="bi bi-basket text-warning"></i></div>
+              <div>
+                <div class="small fw-medium">Récolte pommiers (500 arbres)</div>
+                <div class="text-muted" style="font-size:.7rem">Terrain C – Verger mixte</div>
+                <span class="chip" style="background:#d1fae5;color:#065f46">10 sep · J+98</span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-top">
+            <a class="text-success small text-decoration-none" onclick="show('interventions',null,null)" style="cursor:pointer">
+              Toutes les interventions <i class="bi bi-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       2. PARCELLES
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-parcelles" class="screen">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <p class="text-muted mb-0">4 parcelles · 4,58 ha au total</p>
+      <button class="btn btn-success btn-sm" onclick="show('create',null,null)"><i class="bi bi-plus-circle me-1"></i>Nouvelle parcelle</button>
+    </div>
+    <div class="row g-3">
+      <!-- Terrain A -->
+      <div class="col-md-6 col-xl-4">
+        <div class="parcelle-card h-100">
+          <div class="strip strip-mixte" style="height:5px"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h6 class="fw-bold mb-1">Terrain A</h6>
+                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>À préciser</div>
+              </div>
+              <div class="text-end">
+                <span class="badge badge-mixte d-block mb-1">Mixte</span>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">EnEvaluation</span>
+              </div>
+            </div>
+            <p class="text-muted small mb-3">Terrain de 3 400 m² non exploité. Potentiel mixte : activité touristique légère et/ou plantation fruitière intensive.</p>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small">3 400 m²</div><div class="text-muted" style="font-size:.7rem">Superficie</div></div></div>
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small text-danger">-1 200 MAD</div><div class="text-muted" style="font-size:.7rem">Marge nette / an</div></div></div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="show('detail',null,null)"><i class="bi bi-eye me-1"></i>Détails</button>
+              <button class="btn btn-sm btn-outline-secondary" title="Interventions"><i class="bi bi-calendar-check"></i></button>
+              <button class="btn btn-sm btn-outline-info" title="Éco-tourisme"><i class="bi bi-compass"></i></button>
+              <button class="btn btn-sm btn-outline-warning" title="Rentabilité"><i class="bi bi-bar-chart-line"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Terrain B -->
+      <div class="col-md-6 col-xl-4">
+        <div class="parcelle-card h-100">
+          <div class="strip strip-mixte" style="height:5px"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h6 class="fw-bold mb-1">Terrain B – Verger pommiers</h6>
+                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>À préciser</div>
+              </div>
+              <div class="text-end">
+                <span class="badge badge-mixte d-block mb-1">Mixte</span>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">EnProduction</span>
+              </div>
+            </div>
+            <p class="text-muted small mb-2">Parcelle 1 064 m² avec 45 pommiers. Double vocation : production fruitière et agritourisme/cueillette.</p>
+            <div class="mb-2">
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">🍎 Pommier · 45 arbres</span>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small">1 064 m²</div><div class="text-muted" style="font-size:.7rem">Superficie</div></div></div>
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small text-success">2 250 MAD</div><div class="text-muted" style="font-size:.7rem">Marge nette / an</div></div></div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="show('detail',null,null)"><i class="bi bi-eye me-1"></i>Détails</button>
+              <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button>
+              <button class="btn btn-sm btn-outline-info"><i class="bi bi-compass"></i></button>
+              <button class="btn btn-sm btn-outline-warning"><i class="bi bi-bar-chart-line"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Terrain C -->
+      <div class="col-md-6 col-xl-4">
+        <div class="parcelle-card h-100">
+          <div class="strip strip-arbo" style="height:5px"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h6 class="fw-bold mb-1">Terrain C – Verger mixte</h6>
+                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>À préciser</div>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 d-block mb-1">Arboricole</span>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">EnProduction</span>
+              </div>
+            </div>
+            <p class="text-muted small mb-2">Verger 1,5 ha avec 500 pommiers et 100 oliviers. Parcelle principale de production.</p>
+            <div class="mb-2">
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 me-1">🍎 Pommier · 500 arbres</span>
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">🫒 Olivier · 100 arbres</span>
+            </div>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small">1.50 ha</div><div class="text-muted" style="font-size:.7rem">Superficie</div></div></div>
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small text-success">29 500 MAD</div><div class="text-muted" style="font-size:.7rem">Marge nette / an</div></div></div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="show('detail',null,null)"><i class="bi bi-eye me-1"></i>Détails</button>
+              <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button>
+              <button class="btn btn-sm btn-outline-warning"><i class="bi bi-bar-chart-line"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Terrain D -->
+      <div class="col-md-6 col-xl-4">
+        <div class="parcelle-card h-100">
+          <div class="strip strip-vide" style="height:5px"></div>
+          <div class="p-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+              <div>
+                <h6 class="fw-bold mb-1">Terrain D</h6>
+                <div class="text-muted small"><i class="bi bi-geo-alt me-1"></i>À préciser</div>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 d-block mb-1">Vide</span>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Disponible</span>
+              </div>
+            </div>
+            <p class="text-muted small mb-3">Terrain 3 ha non exploité. Surface suffisante pour plantation arboricole à grande échelle ou projet éco-touristique.</p>
+            <div class="row g-2 mb-3">
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small">3.00 ha</div><div class="text-muted" style="font-size:.7rem">Superficie</div></div></div>
+              <div class="col-6"><div class="rounded-2 p-2 text-center" style="background:#f9fafb"><div class="fw-bold small text-danger">-2 500 MAD</div><div class="text-muted" style="font-size:.7rem">Coût d'opportunité</div></div></div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-success flex-grow-1" onclick="show('eval',null,null)"><i class="bi bi-eye me-1"></i>Détails</button>
+              <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar-check"></i></button>
+              <button class="btn btn-sm btn-outline-warning"><i class="bi bi-clipboard-data"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       3. FICHE PARCELLE – Terrain C
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-detail" class="screen">
+    <div class="mb-2"><span class="text-muted small" style="cursor:pointer" onclick="show('parcelles',null,null)"><i class="bi bi-arrow-left me-1"></i>Parcelles</span></div>
+    <div class="row g-3">
+      <div class="col-lg-4">
+        <div class="parcelle-card mb-3">
+          <div class="strip strip-arbo" style="height:6px"></div>
+          <div class="p-3">
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mb-2">Arboricole</span>
+            <h5 class="fw-bold mb-1">Terrain C – Verger mixte</h5>
+            <div class="text-muted small mb-1"><i class="bi bi-geo-alt me-1"></i>À préciser</div>
+            <p class="text-muted small">Verger de 1,5 ha avec 500 pommiers et 100 oliviers. Parcelle principale de production fruitière et oléicole.</p>
+            <hr>
+            <div class="row g-2 text-center">
+              <div class="col-6"><div class="fw-bold">1,5 ha</div><div class="text-muted" style="font-size:.7rem">Superficie</div></div>
+              <div class="col-6"><div class="fw-bold text-success">47 500</div><div class="text-muted" style="font-size:.7rem">Revenus (MAD)</div></div>
+              <div class="col-6"><div class="fw-bold">18 000</div><div class="text-muted" style="font-size:.7rem">Charges (MAD)</div></div>
+              <div class="col-6"><div class="fw-bold text-success">29 500</div><div class="text-muted" style="font-size:.7rem">Marge nette (MAD)</div></div>
+            </div>
+            <hr>
+            <div class="d-grid gap-1">
+              <button class="btn btn-outline-warning btn-sm" onclick="show('rentabilite',null,null)"><i class="bi bi-bar-chart-line me-1"></i>Analyse rentabilité</button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="show('interventions',null,null)"><i class="bi bi-calendar-check me-1"></i>Interventions</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-8">
+        <div class="bg-white rounded-3 border p-3 mb-3">
+          <h6 class="fw-semibold mb-2">Cultures</h6>
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>Espèce</th><th>Sup.</th><th>Arbres</th><th>Rend. kg/ha</th><th>Prix/kg</th><th>Revenu brut</th><th>Marge nette</th></tr></thead>
+            <tbody>
+              <tr><td>🍎 Pommier</td><td>1.2 ha</td><td>500</td><td>15 000</td><td>3.0 MAD</td><td class="text-success fw-medium">54 000 MAD</td><td class="text-success fw-medium">43 200 MAD</td></tr>
+              <tr><td>🫒 Olivier</td><td>0.3 ha</td><td>100</td><td>3 000</td><td>5.0 MAD</td><td class="text-success fw-medium">4 500 MAD</td><td class="text-success fw-medium">2 997 MAD</td></tr>
+            </tbody>
+            <tfoot class="table-light fw-semibold"><tr><td colspan="5">Total</td><td class="text-success">58 500 MAD</td><td class="text-success">46 197 MAD</td></tr></tfoot>
+          </table>
+        </div>
+        <div class="bg-white rounded-3 border p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="fw-semibold mb-0">Interventions planifiées</h6>
+            <button class="btn btn-sm btn-success"><i class="bi bi-plus me-1"></i>Ajouter</button>
+          </div>
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light"><tr><th>Type</th><th>Description</th><th>Date</th><th>Coût</th><th>Statut</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"><i class="bi bi-scissors me-1"></i>Taille</span></td><td class="small">Taille fructification – 500 pommiers</td><td class="small">10 jan. 2026</td><td class="small">4 800 MAD</td><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check2 me-1"></i>Réalisée</span></td></tr>
+              <tr><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-droplet me-1"></i>Traitement</span></td><td class="small">Insecticide carpocapse (1ère génération)</td><td class="small">15 mai 2026</td><td class="small">3 000 MAD</td><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">En retard</span></td></tr>
+              <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small">Récolte pommiers (500 arbres)</td><td class="small">10 sep. 2026</td><td class="small">8 700 MAD</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Planifiée J+98</span></td></tr>
+              <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small">Récolte olives (100 arbres)</td><td class="small">5 nov. 2026</td><td class="small">2 100 MAD</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">Planifiée</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       4. NOUVELLE PARCELLE (FORMULAIRE)
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-create" class="screen">
+    <div class="mb-3"><span class="text-muted small" style="cursor:pointer" onclick="show('parcelles',null,null)"><i class="bi bi-arrow-left me-1"></i>Parcelles</span></div>
+    <div class="row justify-content-center">
+    <div class="col-xl-8">
+
+      <!-- ÉTAPE 1 -->
+      <div class="bg-white rounded-3 border p-4 mb-3">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:.72rem">1</span>
+          Identité de la parcelle
+        </h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Nom de la parcelle</label>
+            <input type="text" class="form-control" value="Terrain E – Nouveau" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Localisation</label>
+            <input type="text" class="form-control" placeholder="Commune, Province…" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Superficie (m²)</label>
+            <div class="input-group">
+              <input type="number" class="form-control" value="5000" id="prev-m2" oninput="prevM2(this.value)"/>
+              <span class="input-group-text">m²</span>
+            </div>
+            <div class="text-muted small mt-1" id="prev-ha">≈ 0.5000 ha</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Altitude</label>
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="ex: 1200"/>
+              <span class="input-group-text">m</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Coordonnées GPS <span class="text-muted fw-normal">(optionnel)</span></label>
+            <input type="text" class="form-control" placeholder="ex: 31.6295, -7.9811"/>
+          </div>
+          <div class="col-12">
+            <label class="form-label small fw-semibold">Description</label>
+            <textarea class="form-control" rows="2" placeholder="Décrivez le terrain…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 2 -->
+      <div class="bg-white rounded-3 border p-4 mb-3">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:.72rem">2</span>
+          Classification
+        </h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Type de parcelle</label>
+            <div class="d-flex flex-wrap gap-2">
+              <div class="type-card" onclick="selectPrevType(this)"><i class="bi bi-tree text-success d-block fs-4 mb-1"></i><div class="small fw-medium">Arboricole</div></div>
+              <div class="type-card" onclick="selectPrevType(this)"><i class="bi bi-compass text-info d-block fs-4 mb-1"></i><div class="small fw-medium">EcoTourisme</div></div>
+              <div class="type-card selected" onclick="selectPrevType(this)"><i class="bi bi-grid text-primary d-block fs-4 mb-1"></i><div class="small fw-medium">Mixte</div></div>
+              <div class="type-card" onclick="selectPrevType(this)"><i class="bi bi-question-circle text-warning d-block fs-4 mb-1"></i><div class="small fw-medium">Vide</div></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Statut</label>
+            <select class="form-select">
+              <option>EnProduction</option>
+              <option selected>EnEvaluation</option>
+              <option>EnDeveloppement</option>
+              <option>Disponible</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 3 -->
+      <div class="bg-white rounded-3 border p-4 mb-3">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:.72rem">3</span>
+          Estimations financières <span class="text-muted fw-normal fs-6">(optionnel)</span>
+        </h6>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Revenus annuels estimés (MAD)</label>
+            <div class="input-group">
+              <input type="number" class="form-control" value="12000" id="prev-rev" oninput="prevMarge()"/>
+              <span class="input-group-text">MAD</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Coûts annuels estimés (MAD)</label>
+            <div class="input-group">
+              <input type="number" class="form-control" value="4000" id="prev-cout" oninput="prevMarge()"/>
+              <span class="input-group-text">MAD</span>
+            </div>
+          </div>
+          <div class="col-12">
+            <div class="rounded-2 p-2 d-flex align-items-center gap-3" style="background:#f9fafb">
+              <span class="text-muted small">Marge nette estimée :</span>
+              <span id="prev-marge" class="fw-bold text-success">8 000 MAD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ÉTAPE 4 – Cultures -->
+      <div class="bg-white rounded-3 border p-4 mb-4">
+        <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+          <span class="badge bg-success rounded-circle d-flex align-items-center justify-content-center" style="width:24px;height:24px;font-size:.72rem">4</span>
+          Cultures <span class="text-muted fw-normal fs-6">(jusqu'à 3 espèces)</span>
+        </h6>
+        <!-- Culture 1 -->
+        <div class="rounded-3 p-3 mb-3" style="background:#f9fafb;border:1px dashed #d1d5db">
+          <div class="small fw-semibold text-muted mb-2">Culture 1</div>
+          <div class="row g-2">
+            <div class="col-md-4">
+              <label class="form-label" style="font-size:.72rem">Espèce</label>
+              <input type="text" class="form-control form-control-sm" value="Pommier" list="elist"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:.72rem">Nb arbres</label>
+              <input type="number" class="form-control form-control-sm" value="200"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:.72rem">Superficie (ha)</label>
+              <input type="number" class="form-control form-control-sm" value="0.40" step="0.01"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:.72rem">Année plant.</label>
+              <input type="number" class="form-control form-control-sm" value="2024"/>
+            </div>
+            <div class="col-md-2">
+              <label class="form-label" style="font-size:.72rem">Rend. kg/ha</label>
+              <input type="number" class="form-control form-control-sm" value="10000"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" style="font-size:.72rem">Prix vente (MAD/kg)</label>
+              <input type="number" class="form-control form-control-sm" value="3.0" step="0.1"/>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label" style="font-size:.72rem">Coût prod. (MAD/ha)</label>
+              <input type="number" class="form-control form-control-sm" value="8000"/>
+            </div>
+          </div>
+        </div>
+        <!-- Culture 2 (vide) -->
+        <div class="rounded-3 p-3 mb-3" style="background:#f9fafb;border:1px dashed #d1d5db;opacity:.55">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small fw-semibold text-muted">Culture 2 <span class="fw-normal">(optionnel)</span></span>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-4"><input type="text" class="form-control form-control-sm" placeholder="Espèce…" list="elist"/></div>
+            <div class="col-md-2"><input type="number" class="form-control form-control-sm" placeholder="Arbres" value="0"/></div>
+            <div class="col-md-2"><input type="number" class="form-control form-control-sm" placeholder="ha" value="0" step="0.01"/></div>
+            <div class="col-md-2"><input type="number" class="form-control form-control-sm" value="2026"/></div>
+            <div class="col-md-2"><input type="number" class="form-control form-control-sm" placeholder="0"/></div>
+          </div>
+        </div>
+        <datalist id="elist">
+          <option value="Pommier"><option value="Pommier Golden"><option value="Pommier Gala">
+          <option value="Olivier"><option value="Olivier Picholine">
+          <option value="Noyer"><option value="Cerisier"><option value="Amandier"><option value="Figuier">
+        </datalist>
+      </div>
+
+      <!-- Boutons -->
+      <div class="d-flex gap-2 justify-content-end">
+        <button class="btn btn-outline-secondary" onclick="show('parcelles',null,null)">Annuler</button>
+        <button class="btn btn-success px-4" onclick="alert('✅ Parcelle créée ! (Simulation – en prod : redirection vers la fiche)')">
+          <i class="bi bi-plus-circle me-1"></i>Créer la parcelle
+        </button>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       5. INTERVENTIONS
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-interventions" class="screen">
+    <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
+      <div class="d-flex gap-1 flex-wrap">
+        <button class="btn btn-sm btn-success">Toutes</button>
+        <button class="btn btn-sm btn-outline-secondary">Terrain A</button>
+        <button class="btn btn-sm btn-outline-secondary">Terrain B</button>
+        <button class="btn btn-sm btn-outline-secondary">Terrain C</button>
+        <button class="btn btn-sm btn-outline-secondary">Terrain D</button>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-danger"><i class="bi bi-exclamation-triangle me-1"></i>En retard (3)</button>
+        <button class="btn btn-sm btn-success"><i class="bi bi-plus me-1"></i>Nouvelle</button>
+      </div>
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-4"><div class="stat-card text-center p-2"><div class="fw-bold fs-5">12</div><div class="text-muted small">Total</div></div></div>
+      <div class="col-4"><div class="stat-card text-center p-2"><div class="fw-bold fs-5 text-success">4</div><div class="text-muted small">Réalisées</div></div></div>
+      <div class="col-4"><div class="stat-card text-center p-2"><div class="fw-bold fs-5">27 700 MAD</div><div class="text-muted small">Coût total</div></div></div>
+    </div>
+    <div class="bg-white rounded-3 border overflow-hidden">
+      <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>Type</th><th>Parcelle</th><th>Description</th><th>Date prévue</th><th>J/h</th><th>Coût</th><th>Statut</th><th></th></tr></thead>
+        <tbody>
+          <tr class="table-success"><td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25"><i class="bi bi-scissors me-1"></i>Taille</span></td><td class="small fw-medium">Terrain B</td><td class="small">Taille formation – 45 pommiers</td><td class="small">20 jan. 2026</td><td class="text-center small">2</td><td class="small">650</td><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check2 me-1"></i>Réalisée 22 jan.</span></td><td></td></tr>
+          <tr class="table-success"><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-bag me-1"></i>Fertilisation</span></td><td class="small fw-medium">Terrain C</td><td class="small">Apport engrais azoté pré-floraison</td><td class="small">10 mar. 2026</td><td class="text-center small">2</td><td class="small">2 200</td><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25"><i class="bi bi-check2 me-1"></i>Réalisée 12 mar.</span></td><td></td></tr>
+          <tr class="table-danger"><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-droplet me-1"></i>Traitement</span></td><td class="small fw-medium">Terrain C</td><td class="small">Insecticide carpocapse (1ère génération)</td><td class="small">15 mai 2026</td><td class="text-center small">3</td><td class="small">3 000</td><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">En retard</span></td><td><button style="font-size:.65rem;padding:2px 7px" class="btn btn-outline-success"><i class="bi bi-check2"></i></button></td></tr>
+          <tr class="table-danger"><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25"><i class="bi bi-droplet me-1"></i>Traitement</span></td><td class="small fw-medium">Terrain B</td><td class="small">Bouillie bordelaise – prévention tavelure</td><td class="small">15 mar. 2026</td><td class="text-center small">1</td><td class="small">400</td><td><span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">En retard</span></td><td><button style="font-size:.65rem;padding:2px 7px" class="btn btn-outline-success"><i class="bi bi-check2"></i></button></td></tr>
+          <tr><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25"><i class="bi bi-eye me-1"></i>Surveillance</span></td><td class="small fw-medium">Terrain A</td><td class="small">Analyse de sol (pH, texture, M.O.)</td><td class="small">15 juin 2026</td><td class="text-center small">1</td><td class="small">2 000</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">J+11</span></td><td><button style="font-size:.65rem;padding:2px 7px" class="btn btn-outline-success"><i class="bi bi-check2"></i></button></td></tr>
+          <tr><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25"><i class="bi bi-water me-1"></i>Irrigation</span></td><td class="small fw-medium">Terrain C</td><td class="small">Mise en route irrigation début saison sèche</td><td class="small">1 juil. 2026</td><td class="text-center small">1</td><td class="small">700</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">J+27</span></td><td><button style="font-size:.65rem;padding:2px 7px" class="btn btn-outline-success"><i class="bi bi-check2"></i></button></td></tr>
+          <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small fw-medium">Terrain B</td><td class="small">Récolte pommiers (cueillette manuelle)</td><td class="small">15 sep. 2026</td><td class="text-center small">3</td><td class="small">900</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">J+103</span></td><td><button style="font-size:.65rem;padding:2px 7px" class="btn btn-outline-success"><i class="bi bi-check2"></i></button></td></tr>
+          <tr><td><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25"><i class="bi bi-basket me-1"></i>Récolte</span></td><td class="small fw-medium">Terrain C</td><td class="small">Récolte pommiers (500 arbres)</td><td class="small">10 sep. 2026</td><td class="text-center small">28</td><td class="small">8 700</td><td><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">J+98</span></td><td><button style="font-size:.65rem;padding:2px 7px" class="btn btn-outline-success"><i class="bi bi-check2"></i></button></td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       6. CALENDRIER
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-calendrier" class="screen">
+    <p class="text-muted small mb-3">Calendrier des opérations pour l'année 2026</p>
+    <div class="bg-white rounded-3 border overflow-auto">
+      <table class="table table-bordered table-sm mb-0" style="min-width:780px">
+        <thead><tr class="table-dark"><th style="width:170px">Parcelle / Type</th>
+          <th class="text-center small">Jan</th><th class="text-center small">Fév</th><th class="text-center small">Mar</th>
+          <th class="text-center small">Avr</th><th class="text-center small">Mai</th><th class="text-center small">Juin</th>
+          <th class="text-center small">Juil</th><th class="text-center small">Aoû</th><th class="text-center small">Sep</th>
+          <th class="text-center small">Oct</th><th class="text-center small">Nov</th><th class="text-center small">Déc</th>
+        </tr></thead>
+        <tbody>
+          <tr class="table-light"><td colspan="13" class="fw-semibold small py-1 ps-2"><i class="bi bi-map me-1 text-success"></i>Terrain C – Verger mixte</td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-scissors me-1 text-primary"></i>Taille</td>
+            <td class="text-center"><span class="dot bg-success" title="Réalisée"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6" title="Taille oliviers"></span></td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-bag me-1 text-success"></i>Fertilisation</td>
+            <td></td><td></td><td class="text-center"><span class="dot bg-success"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-droplet me-1 text-danger"></i>Traitement</td>
+            <td></td><td></td><td></td><td></td>
+            <td class="text-center"><span class="dot bg-danger" title="En retard"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-water me-1 text-info"></i>Irrigation</td>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6"></span></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-basket me-1 text-warning"></i>Récolte</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6"></span></td><td></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6"></span></td><td></td></tr>
+          <tr class="table-light"><td colspan="13" class="fw-semibold small py-1 ps-2"><i class="bi bi-map me-1 text-success"></i>Terrain B – Verger pommiers</td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-scissors me-1 text-primary"></i>Taille</td>
+            <td class="text-center"><span class="dot bg-success"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-droplet me-1 text-danger"></i>Traitement</td>
+            <td></td><td></td>
+            <td class="text-center"><span class="dot bg-danger"></span></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-basket me-1 text-warning"></i>Récolte</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6"></span></td><td></td><td></td><td></td></tr>
+          <tr class="table-light"><td colspan="13" class="fw-semibold small py-1 ps-2"><i class="bi bi-map me-1 text-success"></i>Terrain A &amp; D – Évaluation</td></tr>
+          <tr><td class="small ps-3"><i class="bi bi-eye me-1 text-secondary"></i>Surveillance</td>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6"></span></td>
+            <td class="text-center"><span class="dot" style="background:#3b82f6"></span></td><td></td><td></td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-2 d-flex flex-wrap gap-3">
+      <span class="small text-muted"><span class="dot bg-success d-inline-block"></span> Réalisée</span>
+      <span class="small text-muted"><span class="dot bg-danger d-inline-block"></span> En retard</span>
+      <span class="small text-muted"><span class="dot d-inline-block" style="background:#3b82f6"></span> Planifiée</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       7. RENTABILITÉ
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-rentabilite" class="screen">
+    <div class="row g-3 mb-3">
+      <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><div class="text-muted small mb-1">Terrain C – Verger mixte</div><div class="fs-5 fw-bold text-success">29 500 MAD</div><div class="text-muted small">19 667 MAD/ha</div><div class="d-flex justify-content-between small mt-1"><span>Revenus</span><span class="text-success fw-medium">47 500 MAD</span></div><div class="d-flex justify-content-between small"><span>Charges</span><span class="text-danger fw-medium">18 000 MAD</span></div></div><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Arboricole</span></div><div class="mt-2"><button class="btn btn-outline-success" style="font-size:.72rem;padding:3px 10px">Analyse détaillée →</button></div></div></div>
+      <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><div class="text-muted small mb-1">Terrain B – Verger pommiers</div><div class="fs-5 fw-bold text-success">2 250 MAD</div><div class="text-muted small">21 163 MAD/ha</div><div class="d-flex justify-content-between small mt-1"><span>Revenus</span><span class="text-success fw-medium">4 050 MAD</span></div><div class="d-flex justify-content-between small"><span>Charges</span><span class="text-danger fw-medium">1 800 MAD</span></div></div><span class="badge badge-mixte">Mixte</span></div><div class="mt-2"><button class="btn btn-outline-success" style="font-size:.72rem;padding:3px 10px">Analyse détaillée →</button></div></div></div>
+      <div class="col-md-4"><div class="stat-card"><div class="d-flex justify-content-between align-items-start"><div><div class="text-muted small mb-1">Terrain D</div><div class="fs-5 fw-bold text-danger">-2 500 MAD</div><div class="text-muted small">Coût d'opportunité</div></div><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Vide</span></div><div class="mt-2"><button class="btn btn-outline-warning" style="font-size:.72rem;padding:3px 10px" onclick="show('eval',null,null)">Évaluation →</button></div></div></div>
+    </div>
+    <div class="bg-white rounded-3 border p-3 mb-3">
+      <h6 class="fw-semibold mb-2">Historique rendements – Terrain C</h6>
+      <table class="table table-sm table-hover">
+        <thead class="table-light"><tr><th>Année</th><th>Espèce</th><th>Quantité (kg)</th><th>Prix MAD/kg</th><th>Revenu brut</th><th>Charges</th><th>Marge nette</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="fw-medium">2025</td><td>🍎 Pommier</td><td>18 000</td><td>3.0</td><td class="text-success fw-medium">54 000 MAD</td><td class="text-danger">13 000 MAD</td><td class="fw-semibold text-success">41 000 MAD</td><td class="text-muted small">Meilleure année</td></tr>
+          <tr><td class="fw-medium">2025</td><td>🫒 Olivier</td><td>3 200</td><td>5.0</td><td class="text-success fw-medium">16 000 MAD</td><td class="text-danger">2 200 MAD</td><td class="fw-semibold text-success">13 800 MAD</td><td class="text-muted small">Bonne alternance</td></tr>
+          <tr><td class="fw-medium">2024</td><td>🍎 Pommier</td><td>14 000</td><td>3.0</td><td class="text-success fw-medium">42 000 MAD</td><td class="text-danger">12 500 MAD</td><td class="fw-semibold text-success">29 500 MAD</td><td class="text-muted small">Tavelure modérée</td></tr>
+          <tr><td class="fw-medium">2024</td><td>🫒 Olivier</td><td>1 800</td><td>5.0</td><td class="text-success fw-medium">9 000 MAD</td><td class="text-danger">2 200 MAD</td><td class="fw-semibold text-success">6 800 MAD</td><td class="text-muted small">Année de repos</td></tr>
+          <tr><td class="fw-medium">2023</td><td>🍎 Pommier</td><td>16 000</td><td>2.8</td><td class="text-success fw-medium">44 800 MAD</td><td class="text-danger">12 000 MAD</td><td class="fw-semibold text-success">32 800 MAD</td><td class="text-muted small">1ère vraie récolte</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="row g-3">
+      <div class="col-lg-7">
+        <div class="bg-white rounded-3 border p-3">
+          <h6 class="fw-semibold mb-2 small">Évolution revenus bruts par espèce (Terrain C)</h6>
+          <canvas id="rentChart" height="120"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="bg-white rounded-3 border p-3">
+          <h6 class="fw-semibold mb-3 small"><i class="bi bi-calculator me-2"></i>Simulateur de marge – Terrain C</h6>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">🍎 Pommier – Prix vente (MAD/kg)</label>
+            <input type="range" class="form-range" min="1" max="8" step="0.1" value="3.0" id="sl1" oninput="simU(1,this.value,18000,0.3)"/>
+            <div class="d-flex justify-content-between small text-muted"><span>1 MAD</span><span id="sv1" class="fw-bold text-success">3.0 MAD/kg → marge 41 000 MAD</span><span>8 MAD</span></div>
+          </div>
+          <div>
+            <label class="form-label small fw-semibold">🫒 Olivier – Prix vente (MAD/kg)</label>
+            <input type="range" class="form-range" min="2" max="12" step="0.1" value="5.0" id="sl2" oninput="simU(2,this.value,3200,0.066)"/>
+            <div class="d-flex justify-content-between small text-muted"><span>2 MAD</span><span id="sv2" class="fw-bold text-success">5.0 MAD/kg → marge 13 800 MAD</span><span>12 MAD</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       8. ÉCO-TOURISME
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-eco" class="screen">
+    <div class="alert border-0 mb-3" style="background:#e0f2fe"><i class="bi bi-info-circle me-2"></i><strong>Potentiel identifié</strong> — Terrains A et D avec fort potentiel éco-touristique / agritouristique.</div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6"><div class="parcelle-card"><div class="strip strip-mixte" style="height:5px"></div><div class="p-3"><div class="d-flex justify-content-between mb-2"><div><h6 class="fw-bold mb-1">Terrain A</h6><div class="text-muted small">3 400 m² · vocation mixte</div></div><span class="badge badge-mixte">Mixte</span></div><p class="text-muted small mb-2">Terrain compact idéal pour aire de détente, point de vente produits locaux ou jardin pédagogique.</p><div class="row g-1 text-center mb-2"><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">6 000 MAD</div><div style="font-size:.65rem">Revenus potentiels</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#fff7ed"><div class="fw-bold small text-warning">3 000 MAD</div><div style="font-size:.65rem">Charges</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">3 000 MAD</div><div style="font-size:.65rem">Marge</div></div></div></div><button class="btn btn-sm btn-info text-white w-100" onclick="show('businessplan-a',null,null)"><i class="bi bi-file-earmark-text me-1"></i>Business Plan</button></div></div></div>
+      <div class="col-md-6"><div class="parcelle-card"><div class="strip strip-vide" style="height:5px"></div><div class="p-3"><div class="d-flex justify-content-between mb-2"><div><h6 class="fw-bold mb-1">Terrain D</h6><div class="text-muted small">3,00 ha · terrain vide</div></div><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Vide</span></div><p class="text-muted small mb-2">3 ha : espace suffisant pour éco-camp, circuits de randonnée ou plantation arboricole à grande échelle.</p><div class="row g-1 text-center mb-2"><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">133 000 MAD</div><div style="font-size:.65rem">Revenu brut (éco-camp)</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#fff7ed"><div class="fw-bold small text-warning">97 000 MAD</div><div style="font-size:.65rem">Charges</div></div></div><div class="col-4"><div class="rounded-2 p-1" style="background:#f0fdf4"><div class="fw-bold small text-success">36 000 MAD</div><div style="font-size:.65rem">Marge</div></div></div></div><button class="btn btn-sm btn-info text-white w-100" onclick="show('eval',null,null)"><i class="bi bi-clipboard-data me-1"></i>Voir l'évaluation</button></div></div></div>
+    </div>
+    <div class="bg-white rounded-3 border p-3 mb-3">
+      <h6 class="fw-semibold mb-2">Comparaison des scénarios</h6>
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light"><tr><th>Scénario</th><th>Parcelle</th><th>Modèle</th><th>Visiteurs/an</th><th>Revenu brut</th><th>Marge nette</th><th>ROI</th></tr></thead>
+        <tbody>
+          <tr><td class="fw-medium">Aire de détente</td><td>Terrain A</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Entrées</span></td><td>300</td><td class="text-success fw-medium">6 000 MAD</td><td class="fw-semibold text-success">3 000 MAD</td><td>5.0 ans</td></tr>
+          <tr><td class="fw-medium">Cueillette agritouristique</td><td>Terrain B</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Entrées</span></td><td>200</td><td class="text-success fw-medium">10 000 MAD</td><td class="fw-semibold text-success">8 000 MAD</td><td>1.0 an</td></tr>
+          <tr><td class="fw-medium">Plantation arboricole</td><td>Terrain D</td><td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Arboricole</span></td><td>—</td><td class="text-success fw-medium">— (an 5)</td><td class="fw-semibold text-success">~65 000 MAD</td><td>~4 ans</td></tr>
+          <tr style="background:#f0fdf4"><td class="fw-medium">Éco-camp randonnée ⭐</td><td>Terrain D</td><td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Combiné</span></td><td>600</td><td class="text-success fw-medium">133 000 MAD</td><td class="fw-bold text-success">36 000 MAD</td><td>3.3 ans</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="bg-white rounded-3 border p-3"><h6 class="fw-semibold mb-2 small">Marge nette comparée par scénario</h6><canvas id="ecoChart" height="80"></canvas></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       9. RÉGLEMENTATION
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-regl" class="screen">
+    <div class="alert alert-primary border-0 mb-3" style="background:#eff6ff"><i class="bi bi-info-circle me-2"></i>Synthèse des démarches pour un projet éco-touristique ou agricole au Maroc.</div>
+    <div class="row g-3">
+      <div class="col-lg-6"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-3"><span class="badge bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:26px;height:26px;font-size:.72rem">1</span><h6 class="fw-semibold mb-0">Statut juridique &amp; fiscal</h6></div><table class="table table-sm mb-0"><tr><td class="small fw-medium">Structure</td><td class="text-muted small">Auto-entrepreneur ou SARL</td></tr><tr><td class="small fw-medium">Registre du Commerce</td><td class="text-muted small">Tribunal de Commerce local</td></tr><tr><td class="small fw-medium">Patente</td><td class="text-muted small">Commune territoriale</td></tr><tr><td class="small fw-medium">TVA tourisme</td><td class="text-muted small">10% sur hébergement</td></tr></table></div></div>
+      <div class="col-lg-6"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-3"><span class="badge bg-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:26px;height:26px;font-size:.72rem">2</span><h6 class="fw-semibold mb-0">Classement touristique</h6></div><table class="table table-sm mb-0"><tr><td class="small fw-medium">Gîte rural</td><td class="text-muted small">Classement 1–5 ⭐ Ministère Tourisme</td></tr><tr><td class="small fw-medium">Camping / bivouac</td><td class="text-muted small">Autorisation préfectorale</td></tr><tr><td class="small fw-medium">Guide de montagne</td><td class="text-muted small">Carte pro – Ministère Tourisme</td></tr></table></div></div>
+      <div class="col-lg-6"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-3"><span class="badge bg-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:26px;height:26px;font-size:.72rem">3</span><h6 class="fw-semibold mb-0">Autorisations foncières</h6></div><table class="table table-sm mb-0"><tr><td class="small fw-medium">Permis de construire</td><td class="text-muted small">Commune + Agence Urbaine</td></tr><tr><td class="small fw-medium">Structures légères</td><td class="text-muted small">Autorisation simplifiée tentes/yourtes</td></tr><tr><td class="small fw-medium">Zone Natura / SIBE</td><td class="text-muted small">Haut Commissariat Eaux &amp; Forêts</td></tr></table></div></div>
+      <div class="col-lg-6"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-3"><span class="badge bg-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width:26px;height:26px;font-size:.72rem">4</span><h6 class="fw-semibold mb-0">Financements disponibles</h6></div><table class="table table-sm mb-0"><tr><td class="small fw-medium">Fonds Hassan II</td><td class="text-muted small">Subvention investissement touristique</td></tr><tr><td class="small fw-medium">INDH</td><td class="text-muted small">Initiative Nationale Dév. Humain</td></tr><tr><td class="small fw-medium">FIDA Maroc</td><td class="text-muted small">Zones montagneuses &amp; agricoles</td></tr><tr><td class="small fw-medium">CRI régional</td><td class="text-muted small">Accompagnement investisseurs</td></tr></table></div></div>
+    </div>
+    <div class="bg-white rounded-3 border p-3 mt-3">
+      <h6 class="fw-semibold mb-2"><i class="bi bi-diagram-3 me-2"></i>Feuille de route – 18 mois</h6>
+      <div class="d-flex gap-2 overflow-auto pb-1">
+        <div class="flex-shrink-0 rounded-3 border p-2" style="min-width:140px"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-1 d-block" style="font-size:.65rem">M1–M2</span><div class="fw-semibold small">Étude faisabilité</div><div class="text-muted" style="font-size:.67rem">Topographie, accès, biodiversité</div></div>
+        <div class="flex-shrink-0 rounded-3 border p-2" style="min-width:140px"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mb-1 d-block" style="font-size:.65rem">M3–M4</span><div class="fw-semibold small">Statut juridique</div><div class="text-muted" style="font-size:.67rem">Constitution société, registre</div></div>
+        <div class="flex-shrink-0 rounded-3 border p-2" style="min-width:140px"><span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 mb-1 d-block" style="font-size:.65rem">M4–M6</span><div class="fw-semibold small">Autorisations</div><div class="text-muted" style="font-size:.67rem">Permis, HCEFLCD, commune</div></div>
+        <div class="flex-shrink-0 rounded-3 border p-2" style="min-width:140px"><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 mb-1 d-block" style="font-size:.65rem">M6–M9</span><div class="fw-semibold small">Aménagement</div><div class="text-muted" style="font-size:.67rem">Sentiers, bivouacs, signalétique</div></div>
+        <div class="flex-shrink-0 rounded-3 border p-2" style="min-width:140px"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mb-1 d-block" style="font-size:.65rem">M9–M12</span><div class="fw-semibold small">Classement</div><div class="text-muted" style="font-size:.67rem">Dossier Ministère Tourisme</div></div>
+        <div class="flex-shrink-0 rounded-3 border p-2" style="min-width:140px"><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 mb-1 d-block" style="font-size:.65rem">M12–M18</span><div class="fw-semibold small">Ouverture &amp; commercial</div><div class="text-muted" style="font-size:.67rem">Saison test, partenariats, marketing</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       10. ÉVALUATION TERRAIN D
+  ═══════════════════════════════════════════════════ -->
+  <div id="s-eval" class="screen">
+    <div class="alert border-0 mb-3" style="background:#fef3c7"><i class="bi bi-clipboard-data me-2"></i><strong>Cadre d'évaluation</strong> — Module d'aide à la décision pour le Terrain D (3 ha vide).</div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <div class="parcelle-card h-100"><div class="strip strip-vide" style="height:5px"></div><div class="p-3">
+          <h6 class="fw-bold">Terrain D</h6>
+          <div class="text-muted small mb-2"><i class="bi bi-geo-alt me-1"></i>À préciser</div>
+          <p class="text-muted small">Terrain de 3 ha non exploité. Analyse de sol et étude hydrologique à planifier.</p>
+          <div class="text-center rounded-2 p-2 mb-2" style="background:#fef3c7"><div class="fw-bold fs-5">3.00 ha</div><div class="text-muted small">Surface disponible</div></div>
+          <div class="text-center rounded-2 p-2" style="background:#fee2e2"><div class="fw-bold text-danger">-2 500 MAD/an</div><div class="text-muted small">Coût d'opportunité actuel</div></div>
+        </div></div>
+      </div>
+      <div class="col-md-8">
+        <div class="bg-white rounded-3 border p-3 h-100">
+          <h6 class="fw-semibold mb-3"><i class="bi bi-check2-square me-2"></i>Grille de notation (7 critères)</h6>
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:155px" class="small fw-medium">Qualité du sol</div><div class="d-flex gap-1"><span class="rounded-1" style="width:18px;height:8px;background:#e9a84c"></span><span class="rounded-1" style="width:18px;height:8px;background:#e9a84c"></span><span class="rounded-1" style="width:18px;height:8px;background:#e9a84c"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span></div><div class="text-muted small flex-grow-1">Analyse en cours – potentiel modéré</div></div>
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:155px" class="small fw-medium">Ressource en eau</div><div class="d-flex gap-1"><span class="rounded-1" style="width:18px;height:8px;background:#ef4444"></span><span class="rounded-1" style="width:18px;height:8px;background:#ef4444"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span></div><div class="text-muted small flex-grow-1">Étude hydrologique à planifier</div></div>
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:155px" class="small fw-medium">Accessibilité</div><div class="d-flex gap-1"><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span></div><div class="text-muted small flex-grow-1">Bon accès route</div></div>
+          <div class="d-flex align-items-center gap-2 py-2 border-bottom"><div style="min-width:155px" class="small fw-medium">Contexte foncier</div><div class="d-flex gap-1"><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span></div><div class="text-muted small flex-grow-1">Titre foncier clair – aucun litige</div></div>
+          <div class="d-flex align-items-center gap-2 py-2"><div style="min-width:155px" class="small fw-medium">Marché local</div><div class="d-flex gap-1"><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#52b788"></span><span class="rounded-1" style="width:18px;height:8px;background:#e5e7eb"></span></div><div class="text-muted small flex-grow-1">Coopératives actives – débouchés disponibles</div></div>
+        </div>
+      </div>
+    </div>
+    <h6 class="fw-semibold mb-2">3 scénarios comparés</h6>
+    <div class="row g-3 mb-3">
+      <div class="col-md-4"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-2"><div class="rounded-2 p-2" style="background:#f0fdf4"><i class="bi bi-tree text-success"></i></div><h6 class="fw-semibold mb-0">Plantation arboricole</h6></div><p class="text-muted small mb-2">500 pommiers sur 3 ha. Produit en 3–5 ans.</p><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Investissement</span><span>90 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Revenu (an 5)</span><span>~130 000 MAD</span></div><div class="d-flex justify-content-between small fw-semibold mb-2"><span>Marge nette</span><span class="text-success">~65 000 MAD</span></div><hr class="my-2"><div style="font-size:.7rem" class="text-muted"><strong>Risques :</strong> Délai 3–5 ans · Eau incertaine · Gel</div></div></div>
+      <div class="col-md-4"><div class="bg-white rounded-3 border p-3 h-100"><div class="d-flex align-items-center gap-2 mb-2"><div class="rounded-2 p-2" style="background:#fef3c7"><i class="bi bi-people text-warning"></i></div><h6 class="fw-semibold mb-0">Location (fermage)</h6></div><p class="text-muted small mb-2">Loyer annuel à un agriculteur local. Revenu immédiat.</p><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Loyer annuel</span><span>10 000–15 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Charges</span><span>&lt; 1 000 MAD</span></div><div class="d-flex justify-content-between small fw-semibold mb-2"><span>Marge nette</span><span class="text-success">~12 000 MAD</span></div><hr class="my-2"><div style="font-size:.7rem" class="text-muted"><strong>Risques :</strong> Revenus faibles · Dépendance</div></div></div>
+      <div class="col-md-4"><div class="bg-white rounded-3 border p-3 h-100 border-success"><span class="badge bg-success mb-2"><i class="bi bi-trophy me-1"></i>Meilleur ROI</span><div class="d-flex align-items-center gap-2 mb-2"><div class="rounded-2 p-2" style="background:#eff6ff"><i class="bi bi-compass text-info"></i></div><h6 class="fw-semibold mb-0">Éco-camp &amp; Randonnée</h6></div><p class="text-muted small mb-2">Éco-camp avec circuits guidés sur 3 ha.</p><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Investissement</span><span>120 000 MAD</span></div><div class="d-flex justify-content-between small mb-1"><span class="text-muted">Revenu brut/an</span><span>133 000 MAD</span></div><div class="d-flex justify-content-between small fw-semibold mb-2"><span>Marge nette</span><span class="text-success">36 000 MAD</span></div><hr class="my-2"><div style="font-size:.7rem" class="text-muted"><strong>ROI :</strong> 3.3 ans · Démarches réglementaires nécessaires</div></div></div>
+    </div>
+    <div class="bg-white rounded-3 border p-3">
+      <h6 class="fw-semibold mb-2"><i class="bi bi-lightbulb me-2 text-warning"></i>Recommandation provisoire</h6>
+      <p class="text-muted small mb-2">En attente de l'analyse de sol, la <strong>location à court terme</strong> couvre les frais de portage tout en laissant le temps de décider. Si l'eau est disponible, la <strong>plantation arboricole</strong> est la plus rentable sur 7 ans. Si le potentiel touristique est confirmé, l'<strong>éco-camp</strong> offre le meilleur retour sur investissement (3,3 ans).</p>
+    </div>
+  </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const titles = {
+  dashboard:'Tableau de bord', parcelles:'Mes Parcelles', detail:'Fiche Parcelle – Terrain C',
+  create:'Nouvelle Parcelle', interventions:'Interventions', calendrier:'Calendrier annuel 2026',
+  rentabilite:'Rentabilité', eco:'Éco-tourisme', regl:'Réglementation Maroc', eval:'Évaluation Terrain D'
+};
+function show(id, sideEl, tabEl){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el = document.getElementById('s-'+id);
+  if(el) el.classList.add('active');
+  document.getElementById('page-title').textContent = titles[id]||id;
+  document.querySelectorAll('.s-link').forEach(l=>l.classList.remove('active'));
+  document.querySelectorAll('.screen-tab').forEach(t=>t.classList.remove('active'));
+  if(tabEl) tabEl.classList.add('active');
+  if(sideEl) sideEl.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// Dashboard chart
+new Chart(document.getElementById('dashChart'),{
+  type:'line',
+  data:{labels:[2023,2024,2025],datasets:[
+    {label:'🍎 Pommier',data:[32800,29500,41000],borderColor:'#52b788',backgroundColor:'#52b78820',tension:.35,fill:true,borderWidth:2},
+    {label:'🫒 Olivier', data:[9800,6800,13800],borderColor:'#e9a84c',backgroundColor:'#e9a84c20',tension:.35,fill:true,borderWidth:2},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v.toLocaleString('fr-MA')+' MAD'}}}}
+});
+
+// Rentabilité chart
+new Chart(document.getElementById('rentChart'),{
+  type:'bar',
+  data:{labels:[2023,2024,2025],datasets:[
+    {label:'🍎 Pommier',data:[44800,42000,54000],backgroundColor:'#52b78888',borderColor:'#52b788',borderWidth:1,borderRadius:4},
+    {label:'🫒 Olivier', data:[12000,9000,16000],backgroundColor:'#e9a84c88',borderColor:'#e9a84c',borderWidth:1,borderRadius:4},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v.toLocaleString('fr-MA')+' MAD'}}}}
+});
+
+// Éco-tourisme chart
+new Chart(document.getElementById('ecoChart'),{
+  type:'bar',
+  data:{labels:['Aire détente (A)','Cueillette (B)','Plantation (D)','Éco-camp (D) ⭐'],datasets:[
+    {label:'Revenu brut',data:[6000,10000,130000,133000],backgroundColor:'#52b78855',borderColor:'#52b788',borderWidth:1,borderRadius:4},
+    {label:'Marge nette',data:[3000,8000,65000,36000],backgroundColor:'#e9a84c88',borderColor:'#e9a84c',borderWidth:1,borderRadius:4},
+  ]},
+  options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{ticks:{callback:v=>v.toLocaleString('fr-MA')+' MAD'}}}}
+});
+
+// Superficie → ha conversion
+function prevM2(v){
+  const ha=parseFloat(v)/10000;
+  document.getElementById('prev-ha').textContent=isNaN(ha)?'':('≈ '+ha.toFixed(4)+' ha');
+}
+
+// Marge live
+function prevMarge(){
+  const r=parseFloat(document.getElementById('prev-rev').value)||0;
+  const c=parseFloat(document.getElementById('prev-cout').value)||0;
+  const m=r-c;
+  const el=document.getElementById('prev-marge');
+  el.textContent=m.toLocaleString('fr-MA')+' MAD';
+  el.className='fw-bold '+(m>=0?'text-success':'text-danger');
+}
+
+// Type card selector
+function selectPrevType(el){
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// Simulateur rentabilité
+function simU(id, prix, qty, cout){
+  prix=parseFloat(prix);
+  const marge=(qty*prix)-cout;
+  document.getElementById('sv'+id).textContent=`${prix.toFixed(1)} MAD/kg → marge ${marge.toLocaleString('fr-MA')} MAD`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+@model ClaudeMVC.Models.NouvelleParcelleViewModel
+@{
+    ViewData["Title"] = "Nouvelle parcelle";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none text-muted small"><i class="bi bi-arrow-left me-1"></i>Parcelles</a>
+</div>
+
+<div class="row justify-content-center">
+<div class="col-xl-8">
+
+<form asp-action="Create" method="post" id="createForm">
+@Html.AntiForgeryToken()
+
+<!-- SECTION 1 : Identité -->
+<div class="bg-white rounded-3 border p-4 mb-3">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+        <span class="badge bg-success rounded-circle" style="width:24px;height:24px;font-size:.75rem;display:inline-flex;align-items:center;justify-content:center">1</span>
+        Identité de la parcelle
+    </h6>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="Nom" class="form-label small fw-semibold"></label>
+            <input asp-for="Nom" class="form-control" placeholder="Ex : Terrain du Haut" />
+            <span asp-validation-for="Nom" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Localisation" class="form-label small fw-semibold"></label>
+            <input asp-for="Localisation" class="form-control" placeholder="Ex : Commune d'Imouzzer, Province de Fès" />
+            <span asp-validation-for="Localisation" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="SuperficieM2" class="form-label small fw-semibold"></label>
+            <div class="input-group">
+                <input asp-for="SuperficieM2" type="number" step="1" min="1" class="form-control" id="superficieInput"
+                       oninput="updateSuperficie(this.value)" placeholder="ex: 3400" />
+                <span class="input-group-text">m²</span>
+            </div>
+            <div class="text-muted small mt-1" id="superficieHa"></div>
+            <span asp-validation-for="SuperficieM2" class="text-danger small"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="AltitudeMetre" class="form-label small fw-semibold"></label>
+            <div class="input-group">
+                <input asp-for="AltitudeMetre" class="form-control" placeholder="ex: 1200" />
+                <span class="input-group-text">m</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small fw-semibold">Coordonnées GPS <span class="text-muted fw-normal">(optionnel)</span></label>
+            <input class="form-control" placeholder="ex: 31.6295, -7.9811" />
+        </div>
+        <div class="col-12">
+            <label asp-for="Description" class="form-label small fw-semibold"></label>
+            <textarea asp-for="Description" class="form-control" rows="2"
+                      placeholder="Décrivez le terrain, son contexte, ses caractéristiques…"></textarea>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 2 : Classification -->
+<div class="bg-white rounded-3 border p-4 mb-3">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+        <span class="badge bg-success rounded-circle" style="width:24px;height:24px;font-size:.75rem;display:inline-flex;align-items:center;justify-content:center">2</span>
+        Classification
+    </h6>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="Type" class="form-label small fw-semibold"></label>
+            <div class="d-flex flex-wrap gap-2" id="typeSelector">
+                @foreach (var t in Enum.GetValues<ClaudeMVC.Models.TypeParcelle>())
+                {
+                    var icon = t switch {
+                        ClaudeMVC.Models.TypeParcelle.Arboricole => "bi-tree",
+                        ClaudeMVC.Models.TypeParcelle.EcoTourisme => "bi-compass",
+                        ClaudeMVC.Models.TypeParcelle.Mixte => "bi-grid",
+                        _ => "bi-question-circle"
+                    };
+                    var color = t switch {
+                        ClaudeMVC.Models.TypeParcelle.Arboricole => "success",
+                        ClaudeMVC.Models.TypeParcelle.EcoTourisme => "info",
+                        ClaudeMVC.Models.TypeParcelle.Mixte => "primary",
+                        _ => "warning"
+                    };
+                    <div class="type-card border rounded-3 p-2 text-center" style="cursor:pointer;min-width:100px;transition:.15s"
+                         data-value="@((int)t)" onclick="selectType(this, @((int)t))">
+                        <i class="bi @icon text-@color d-block fs-4 mb-1"></i>
+                        <div class="small fw-medium">@t</div>
+                    </div>
+                }
+            </div>
+            <input type="hidden" asp-for="Type" id="typeHidden" />
+            <span asp-validation-for="Type" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Statut" class="form-label small fw-semibold"></label>
+            <select asp-for="Statut" class="form-select"
+                    asp-items="Html.GetEnumSelectList<ClaudeMVC.Models.StatutParcelle>()"></select>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 3 : Finances -->
+<div class="bg-white rounded-3 border p-4 mb-3">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+        <span class="badge bg-success rounded-circle" style="width:24px;height:24px;font-size:.75rem;display:inline-flex;align-items:center;justify-content:center">3</span>
+        Estimations financières <span class="text-muted fw-normal fs-6">(optionnel)</span>
+    </h6>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="RevenusAnnuelsEstimes" class="form-label small fw-semibold"></label>
+            <div class="input-group">
+                <input asp-for="RevenusAnnuelsEstimes" type="number" min="0" step="100" class="form-control"
+                       placeholder="0" oninput="updateMarge()" />
+                <span class="input-group-text">MAD</span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="CoutsAnnuelsEstimes" class="form-label small fw-semibold"></label>
+            <div class="input-group">
+                <input asp-for="CoutsAnnuelsEstimes" type="number" min="0" step="100" class="form-control"
+                       placeholder="0" oninput="updateMarge()" />
+                <span class="input-group-text">MAD</span>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="rounded-2 p-2 d-flex align-items-center gap-3" style="background:#f9fafb">
+                <span class="text-muted small">Marge nette estimée :</span>
+                <span id="margeDisplay" class="fw-bold text-success">0 MAD</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SECTION 4 : Cultures (si arboricole ou mixte) -->
+<div class="bg-white rounded-3 border p-4 mb-4" id="culturesSection" style="display:none">
+    <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+        <span class="badge bg-success rounded-circle" style="width:24px;height:24px;font-size:.75rem;display:inline-flex;align-items:center;justify-content:center">4</span>
+        Cultures <span class="text-muted fw-normal fs-6">(jusqu'à 3 espèces)</span>
+    </h6>
+
+    @for (int i = 0; i < 3; i++)
+    {
+        <div class="culture-block rounded-3 p-3 mb-3" style="background:#f9fafb;border:1px dashed #d1d5db" id="cult@(i)">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="small fw-semibold text-muted">Culture @(i + 1)</span>
+                @if (i > 0)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-danger" style="font-size:.7rem;padding:2px 8px"
+                            onclick="clearCulture(@i)">Effacer</button>
+                }
+            </div>
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label" style="font-size:.72rem">Espèce</label>
+                    <input asp-for="Cultures[@i].Espece" class="form-control form-control-sm"
+                           placeholder="Ex : Pommier, Olivier…" list="especesList" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" style="font-size:.72rem">Nb arbres</label>
+                    <input asp-for="Cultures[@i].NombreArbres" type="number" min="0"
+                           class="form-control form-control-sm" placeholder="0" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" style="font-size:.72rem">Superficie (ha)</label>
+                    <input asp-for="Cultures[@i].SuperficieHa" type="number" min="0" step="0.01"
+                           class="form-control form-control-sm" placeholder="0.0" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" style="font-size:.72rem">Année plant.</label>
+                    <input asp-for="Cultures[@i].AnneePlantation" type="number" min="1900" max="2100"
+                           class="form-control form-control-sm" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" style="font-size:.72rem">Rend. kg/ha</label>
+                    <input asp-for="Cultures[@i].RendementKgHa" type="number" min="0"
+                           class="form-control form-control-sm" placeholder="0" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" style="font-size:.72rem">Prix vente (MAD/kg)</label>
+                    <input asp-for="Cultures[@i].PrixVenteKg" type="number" min="0" step="0.1"
+                           class="form-control form-control-sm" placeholder="0" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" style="font-size:.72rem">Coût prod. (MAD/ha)</label>
+                    <input asp-for="Cultures[@i].CoutProductionHa" type="number" min="0"
+                           class="form-control form-control-sm" placeholder="0" />
+                </div>
+            </div>
+        </div>
+    }
+    <datalist id="especesList">
+        <option value="Pommier">
+        <option value="Pommier Golden">
+        <option value="Pommier Gala">
+        <option value="Olivier Picholine">
+        <option value="Olivier">
+        <option value="Noyer">
+        <option value="Cerisier">
+        <option value="Prunier">
+        <option value="Amandier">
+        <option value="Figuier">
+        <option value="Grenadier">
+    </datalist>
+</div>
+
+<!-- ACTIONS -->
+<div class="d-flex gap-2 justify-content-end">
+    <a asp-action="Index" class="btn btn-outline-secondary">Annuler</a>
+    <button type="submit" class="btn btn-success px-4">
+        <i class="bi bi-plus-circle me-1"></i>Créer la parcelle
+    </button>
+</div>
+
+</form>
+</div>
+</div>
+
+@section Scripts {
+<script>
+// Superficie → ha
+function updateSuperficie(v) {
+    const ha = parseFloat(v) / 10000;
+    const el = document.getElementById('superficieHa');
+    el.textContent = isNaN(ha) ? '' : `≈ ${ha.toFixed(4)} ha`;
+}
+
+// Marge temps réel
+function updateMarge() {
+    const rev = parseFloat(document.querySelector('[name="RevenusAnnuelsEstimes"]').value) || 0;
+    const cout = parseFloat(document.querySelector('[name="CoutsAnnuelsEstimes"]').value) || 0;
+    const m = rev - cout;
+    const el = document.getElementById('margeDisplay');
+    el.textContent = m.toLocaleString('fr-MA') + ' MAD';
+    el.className = 'fw-bold ' + (m >= 0 ? 'text-success' : 'text-danger');
+}
+
+// Sélecteur de type carte
+function selectType(el, val) {
+    document.querySelectorAll('.type-card').forEach(c => {
+        c.style.background = '';
+        c.style.borderColor = '';
+        c.style.boxShadow = '';
+    });
+    el.style.background = '#f0fdf4';
+    el.style.borderColor = '#52b788';
+    el.style.boxShadow = '0 0 0 2px #52b78844';
+    document.getElementById('typeHidden').value = val;
+    // Show cultures section for arboricole (0) or mixte (3)
+    const showCultures = val === 0 || val === 3;
+    document.getElementById('culturesSection').style.display = showCultures ? 'block' : 'none';
+}
+
+function clearCulture(i) {
+    document.querySelectorAll(`#cult${i} input`).forEach(el => {
+        if (el.type === 'number') el.value = el.name.includes('Plantation') ? new Date().getFullYear() : 0;
+        else el.value = '';
+    });
+}
+
+// Init si valeur déjà sélectionnée
+document.addEventListener('DOMContentLoaded', () => {
+    const v = parseInt(document.getElementById('typeHidden').value);
+    if (!isNaN(v)) {
+        const card = document.querySelector(`.type-card[data-value="${v}"]`);
+        if (card) selectType(card, v);
+    }
+    const s = document.getElementById('superficieInput');
+    if (s?.value) updateSuperficie(s.value);
+});
+</script>
+}

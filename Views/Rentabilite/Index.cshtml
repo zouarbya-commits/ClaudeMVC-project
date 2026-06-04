@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Rentabilité";
+    var parcelles = ViewBag.Parcelles as List<ClaudeMVC.Models.Parcelle>;
+    var rendements = ViewBag.Rendements as List<ClaudeMVC.Models.RendementAnnuel>;
+}
+
+<div class="row g-3 mb-4">
+    @foreach (var p in parcelles!)
+    {
+        var marge = p.MargeNette;
+        var margeHa = p.SuperficieHa > 0 ? marge / p.SuperficieHa : 0;
+        var superfLabel = p.SuperficieAffichee;
+        <div class="col-md-4">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small mb-1">@p.Nom</div>
+                        <div class="fs-5 fw-bold text-@(marge >= 0 ? "success" : "danger")">@marge.ToString("N0") MAD</div>
+                        <div class="text-muted small">@margeHa.ToString("N0") MAD/ha</div>
+                    </div>
+                    <span class="badge bg-@p.CouleurBadge bg-opacity-10 text-@p.CouleurBadge border border-@p.CouleurBadge border-opacity-25">@p.Type</span>
+                </div>
+                <div class="mt-2">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Revenus</span><span class="text-success fw-medium">@(p.RevenusAnnuelsEstimes?.ToString("N0")) MAD</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>Charges</span><span class="text-danger fw-medium">@(p.CoutsAnnuelsEstimes?.ToString("N0")) MAD</span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <a asp-action="Parcelle" asp-route-id="@p.Id" class="btn btn-xs btn-outline-success" style="font-size:0.75rem;padding:3px 10px">
+                        Analyse détaillée →
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Tableau rendements -->
+<div class="bg-white rounded-3 border p-3 mb-3">
+    <h6 class="fw-semibold mb-3">Historique des rendements – Domaine Arboricole</h6>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Année</th>
+                    <th>Espèce</th>
+                    <th>Quantité (kg)</th>
+                    <th>Prix (MAD/kg)</th>
+                    <th>Revenu brut</th>
+                    <th>Charges</th>
+                    <th>Marge nette</th>
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in rendements!.OrderByDescending(x => x.Annee).ThenBy(x => x.Espece))
+                {
+                    <tr>
+                        <td class="fw-medium">@r.Annee</td>
+                        <td>@r.Espece</td>
+                        <td>@r.QuantiteKg.ToString("N0")</td>
+                        <td>@r.PrixVenteKg MAD</td>
+                        <td class="text-success fw-medium">@r.RevenuBrut.ToString("N0") MAD</td>
+                        <td class="text-danger">@r.CoutsTotal.ToString("N0") MAD</td>
+                        <td class="fw-semibold text-@(r.MargeNette >= 0 ? "success" : "danger")">@r.MargeNette.ToString("N0") MAD</td>
+                        <td class="text-muted small">@r.Notes</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Chart par année -->
+<div class="bg-white rounded-3 border p-3">
+    <h6 class="fw-semibold mb-3">Évolution revenus bruts par espèce</h6>
+    <canvas id="rentChart" height="100"></canvas>
+</div>
+
+@section Scripts {
+<script>
+(function(){
+    const data = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+        (rendements ?? new List<ClaudeMVC.Models.RendementAnnuel>()).Select(r => new {
+            annee = r.Annee, espece = r.Espece, revenu = r.RevenuBrut, marge = r.MargeNette
+        })
+    ));
+    const labels = [...new Set(data.map(d => d.annee))].sort();
+    const especes = [...new Set(data.map(d => d.espece))];
+    const colors = ["#52b788","#e9a84c","#94a3b8"];
+    new Chart(document.getElementById('rentChart'), {
+        type: 'bar',
+        data: {
+            labels,
+            datasets: especes.map((e, i) => ({
+                label: e,
+                data: labels.map(a => { const r = data.find(d => d.espece===e && d.annee===a); return r ? r.revenu : 0; }),
+                backgroundColor: colors[i] + "bb",
+                borderColor: colors[i], borderWidth: 1, borderRadius: 4,
+            }))
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { x: { stacked: false }, y: { ticks: { callback: v => v.toLocaleString('fr-MA') + ' MAD' } } }
+        }
+    });
+})();
+</script>
+}
